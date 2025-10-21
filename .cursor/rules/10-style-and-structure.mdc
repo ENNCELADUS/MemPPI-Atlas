@@ -1,0 +1,9 @@
+---
+description: Naming, code style, patterns (DI, API layer), folder conventions
+---
+
+- No duplicate code—reuse existing functions.
+- Extend existing files unless a new file is necessary.
+- Justify each dependency.
+- Prefer the smallest working solution.
+- Consistent naming: camelCase for functions/vars, PascalCase for classes/components.

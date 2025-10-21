@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+build/
+coverage/
+
+# OS & editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Environments
+.env
+.env.*
+
+# Python cache (if any tooling)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data (large files should not be tracked)
+data/*.csv
+datasets/

@@ -1,0 +1,17 @@
+---
+description: Frontend rules and patterns for website development
+---
+
+- Prefer a simple, conventional framework (e.g., React/Next) but keep code framework-agnostic where possible.
+- Components:
+  - Keep components small and focused; colocate styles and tests.
+  - Lift state only when needed; prefer props and composition.
+- State:
+  - Use lightweight state for local UI; avoid global state unless necessary.
+  - Debounce search input; reflect filters in URL query params.
+- Data fetching:
+  - Centralize API client; handle loading/error/empty states.
+  - Paginate on the server; never fetch unbounded lists.
+- Styling:
+  - Use a consistent design token system; avoid ad-hoc inline styles.
+  - Ensure accessibility (aria labels, keyboard navigation).

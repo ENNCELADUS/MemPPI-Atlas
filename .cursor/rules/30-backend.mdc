@@ -1,0 +1,14 @@
+---
+description: Backend API rules and patterns for website development
+---
+
+- REST conventions: nouns for resources, plural collections, query params for filters.
+- Pagination: `limit` (1–100) and `offset` (>=0); always return `total`.
+- Validation: enforce bounds on `minProb`, validate `accession`, sanitize `tissue`.
+- Errors: return a consistent envelope `{ error: { code, message } }` and proper HTTP status.
+- CSV Data Access:
+  - Stream reads; avoid loading entire files into memory.
+  - Normalize `Expression.tissue` by splitting on backslash (`\\`).
+  - Treat `NA` as missing.
+- Performance: prefer server-side filtering/sorting; add simple caching for hot queries.
+- Security: disable directory listing; validate download parameters to prevent injection.
