@@ -1,17 +1,22 @@
 ---
-description: Frontend rules and patterns for website development
+description: Frontend rules for Next.js, React, and Tailwind CSS
 ---
 
-- Prefer a simple, conventional framework (e.g., React/Next) but keep code framework-agnostic where possible.
-- Components:
-  - Keep components small and focused; colocate styles and tests.
-  - Lift state only when needed; prefer props and composition.
-- State:
-  - Use lightweight state for local UI; avoid global state unless necessary.
-  - Debounce search input; reflect filters in URL query params.
-- Data fetching:
-  - Centralize API client; handle loading/error/empty states.
-  - Paginate on the server; never fetch unbounded lists.
-- Styling:
-  - Use a consistent design token system; avoid ad-hoc inline styles.
-  - Ensure accessibility (aria labels, keyboard navigation).
+- **Framework**: Use **Next.js** and **React**. Follow file-based routing conventions.
+- **Components**:
+  - Keep components small, focused, and server-side rendered (SSR) where possible.
+  - Colocate components, styles, and tests by feature.
+- **State Management**:
+  - Use React Hooks (`useState`, `useReducer`) for local component state.
+  - Avoid global state managers unless absolutely necessary.
+- **Data Fetching**:
+  - Use Next.js data fetching methods (`getStaticProps`, `getServerSideProps`).
+  - Handle loading, error, and empty states gracefully.
+- **Styling**:
+  - Use **Tailwind CSS** for all styling.
+  - Define a consistent design system in `tailwind.config.js`.
+- **Graph Visualization**:
+  - Use **Cytoscape.js** for network graphs.
+  - Encapsulate graph logic in a dedicated React component.
+- **Accessibility**:
+  - Ensure all components are accessible (ARIA roles, keyboard navigation).

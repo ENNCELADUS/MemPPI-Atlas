@@ -1,41 +1,20 @@
 ---
-description: Test rules and conventions (auto-attached to test files)
+description: Test rules for Next.js applications
 globs:
-  - tests/**/*.{ts,tsx,js,jsx}
-  - **/*.{spec,test}.{ts,tsx,js,jsx}
-alwaysApply: false
+  - "**/*.{spec,test}.{ts,tsx,js,jsx}"
 ---
 
-- Scope & precedence:
-  - Auto-attach to test files via `globs`. Keep concise; reference architecture and API specs when needed.
-- Determinism:
-  - No real network or filesystem by default. Mock I/O and time.
-  - Use fixed seeds for randomized data.
-- Structure:
-  - Arrange → Act → Assert. Prefer one primary behavior per test.
-  - Co-locate unit tests with source or under `tests/` consistently.
-- Naming:
-  - `*.test.*` or `*.spec.*` for unit/integration. `*.e2e.*` for end-to-end.
-- Assertions:
-  - Prefer specific assertions over snapshots. Snapshots only for small, stable UI.
-- React/UI (if applicable):
-  - Prefer accessible queries over `data-testid`; use `getByRole/LabelText` first.
-  - Use `userEvent` for interactions; await async UI with `findBy*`.
-- API tests:
-  - Validate envelopes `{ data, total, page, pageSize }` and error shape `{ error: { code, message } }`.
-  - Enforce pagination bounds and parameter validation (e.g., `minProb` 0–1).
-- E2E tests:
-  - Keep smoke paths short: search → protein → paginate → download.
-  - Isolate from prod services; seed data or mock network.
-- Cleanup:
-  - Reset mocks and global state between tests. Avoid test order coupling.
-- Performance:
-  - Keep unit tests fast; run E2E selectively (CI nightly or on demand).
-- Fixtures & factories:
-  - Use small, realistic fixtures. Centralize factories for protein/edge entities.
-- Coverage (placeholder):
-  - Target thresholds TBD. Focus on critical paths (search, protein detail, interactions list).
-
-# References
-- See `docs/instructions.md`, `docs/api-spec.md`, and `docs/architecture.md`.
-- For rule behavior and precedence, see `cursor-best-practice.md`.
+- **Frameworks**: Use **Jest** for running tests and **React Testing Library** for rendering and interacting with components.
+- **Scope**:
+  - **Unit Tests**: Test individual components and functions in isolation. Mock dependencies and API calls.
+  - **Integration Tests**: Test component trees or user flows. May use a mock service worker for API calls.
+- **Structure**:
+  - Co-locate test files with the source files (e.g., `Component.tsx` and `Component.test.tsx`).
+  - Follow the Arrange-Act-Assert pattern.
+- **Queries**:
+  - Prefer accessible queries (`getByRole`, `getByLabelText`) over `getByTestId`.
+- **Async Operations**:
+  - Use `async/await` with `findBy*` or `waitFor` to handle asynchronous UI updates.
+- **API Mocking**:
+  - Use Jest's mocking capabilities or `msw` (Mock Service Worker) to mock Next.js API routes.
+  - Never run tests against the live Supabase database.

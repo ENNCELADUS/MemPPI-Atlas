@@ -1,14 +1,21 @@
 ---
-description: Backend API rules and patterns for website development
+description: Backend rules for Next.js API Routes and Supabase
 ---
 
-- REST conventions: nouns for resources, plural collections, query params for filters.
-- Pagination: `limit` (1–100) and `offset` (>=0); always return `total`.
-- Validation: enforce bounds on `minProb`, validate `accession`, sanitize `tissue`.
-- Errors: return a consistent envelope `{ error: { code, message } }` and proper HTTP status.
-- CSV Data Access:
-  - Stream reads; avoid loading entire files into memory.
-  - Normalize `Expression.tissue` by splitting on backslash (`\\`).
-  - Treat `NA` as missing.
-- Performance: prefer server-side filtering/sorting; add simple caching for hot queries.
-- Security: disable directory listing; validate download parameters to prevent injection.
+- **API Framework**: Use **Next.js API Routes** for all backend endpoints.
+  - Place API files in `pages/api/`.
+- **Database**: Use **Supabase** (PostgreSQL) for data storage.
+  - Interact with the database via the Supabase client library.
+  - CSV data should be pre-loaded into Supabase tables.
+- **API Design**:
+  - Follow RESTful principles for structuring endpoints.
+  - Use clear, consistent naming for routes (e.g., `/api/nodes`, `/api/edges`).
+- **Data Handling**:
+  - Implement server-side filtering, sorting, and pagination in Supabase queries.
+  - Always validate and sanitize user input before querying the database.
+- **Error Handling**:
+  - Return meaningful HTTP status codes (e.g., 400 for bad requests, 404 for not found).
+  - Respond with a consistent JSON error shape: `{ "error": "message" }`.
+- **Security**:
+  - Use environment variables for all secrets (Supabase URL and API keys).
+  - Do not expose sensitive data in API responses.

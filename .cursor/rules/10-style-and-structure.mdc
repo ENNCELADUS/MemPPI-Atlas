@@ -7,3 +7,6 @@ description: Naming, code style, patterns (DI, API layer), folder conventions
 - Justify each dependency.
 - Prefer the smallest working solution.
 - Consistent naming: camelCase for functions/vars, PascalCase for classes/components.
+- Prioritize clarity and readability over micro-optimizations.
+- Write correct, secure, up-to-date, bug-free code.
+- Treat users as experts; keep explanations brief and precise.
