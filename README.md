@@ -18,23 +18,84 @@ Interactive web platform for visualizing and exploring protein-protein interacti
 - **Graph Visualization:** Cytoscape.js
 - **Hosting:** Vercel
 
+## Project Structure
+
+```
+MemPPI-Atlas/
+├── src/
+│   ├── pages/           # Next.js pages and API routes
+│   │   ├── api/         # API endpoints
+│   │   ├── index.tsx    # Homepage (global network view)
+│   │   └── _app.tsx     # App wrapper
+│   ├── components/      # Reusable React components
+│   │   ├── Header.tsx
+│   │   └── ...
+│   ├── lib/             # Utilities and shared code
+│   │   └── ...
+│   └── styles/          # Global CSS and Tailwind
+│       └── globals.css
+├── data/                # CSV data files
+│   ├── node_info_with_exp.csv
+│   └── edge_info_with_exp.csv
+├── docs/                # Project documentation
+│   ├── architecture.md
+│   ├── api-spec.md
+│   ├── roadmap.md
+│   └── ...
+├── public/              # Static assets
+└── package.json
+```
+
 ## Quick Start
 
+### Prerequisites
+
+- Node.js 18.17 or later
+- npm 9.0 or later
+
 ### Setup
+
 ```bash
-# Install deps (example if using Node)
-# npm install
+# Clone the repository
+git clone <repository-url>
+cd MemPPI-Atlas
+
+# Install dependencies
+npm install
+
+# Set up environment variables (for Milestone 2+)
+# Create .env.local and add Supabase credentials:
+# NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### Run
+### Development
+
 ```bash
-# Start dev servers (frontend/api TBD)
-# npm run dev
+# Start development server
+npm run dev
+
+# Open http://localhost:3000 in your browser
 ```
 
-### Smoke Test
+### Build
+
 ```bash
-# Open site, run a search, open a protein, paginate interactions, download CSV
+# Create production build
+npm run build
+
+# Start production server
+npm start
+```
+
+### Code Quality
+
+```bash
+# Run ESLint
+npm run lint
+
+# Format code with Prettier
+npx prettier --write .
 ```
 
 ## Documentation
