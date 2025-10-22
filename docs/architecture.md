@@ -15,15 +15,16 @@
 
 ### Frontend (Next.js Pages)
 ```
-/pages
+/src/pages
 ├── index.tsx              # Page 1: Global Network View
 ├── subgraph.tsx          # Page 2: Subgraph View (search results)
-└── _app.tsx              # App wrapper with global styles
+├── _app.tsx              # App wrapper with global styles
+└── _document.tsx         # Custom document (HTML structure)
 ```
 
 ### API Routes
 ```
-/pages/api
+/src/pages/api
 ├── network.ts            # GET full network data
 ├── network/
 │   └── stats.ts          # GET network statistics
@@ -34,7 +35,8 @@
 
 ### Components
 ```
-/components
+/src/components
+├── Header.tsx            # Site header with logo and title
 ├── NetworkGraph.tsx      # Cytoscape.js visualization wrapper
 ├── SubgraphView.tsx      # Focused subgraph visualization
 ├── Sidebar.tsx           # Statistics sidebar for Page 1
@@ -46,11 +48,17 @@
 
 ### Library/Utilities
 ```
-/lib
+/src/lib
 ├── supabase.ts           # Supabase client initialization
 ├── graphUtils.ts         # Graph data transformation utilities
 ├── cytoscape-config.ts   # Cytoscape.js styling and layout configs
 └── types.ts              # TypeScript type definitions
+```
+
+### Styles
+```
+/src/styles
+└── globals.css           # Global styles and Tailwind imports
 ```
 
 ### Data Layer
@@ -58,6 +66,21 @@
 Supabase Tables:
 - nodes                   # Imported from node_info_with_exp.csv
 - edges                   # Imported from edge_info_with_exp.csv
+```
+
+### Static Assets
+```
+/public
+├── favicon.ico           # Site favicon
+└── ...                   # Other static files
+```
+
+### Data Files
+```
+/data
+├── node_info_with_exp.csv    # Node/protein information
+├── edge_info_with_exp.csv    # Edge/interaction information
+└── README.md                 # Data documentation
 ```
 
 ---
