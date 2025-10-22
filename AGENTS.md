@@ -5,17 +5,26 @@ Mirror of key project rules and specs for the Codex agent.
 ## Key Rules
 
 ### Guardrails
-- Plan → Confirm → Code cycle
+- First propose a plan; wait for confirmation before coding.
 - Only modify files explicitly named; no side effects elsewhere.
 - Do the simplest thing that works; justify any new dependency.
 - Reuse existing functions; no duplicate code.
 - After coding: print a short self-check list of what changed and why.
+- Follow the user's requirements exactly; confirm, then write code.
+- If uncertain or no correct answer exists, say so—do not guess.
+- Anticipate needs and briefly suggest better alternatives when useful.
+- Fully implement requests; avoid TODOs/placeholders/missing pieces.
+- Be concise—prioritize code and minimal, high-signal prose.
 
 ### Style & Structure
-- DRY principle: no duplicate code
-- Extend existing files unless new file is necessary
-- Justify each dependency
-- camelCase for functions/vars, PascalCase for classes/components.
+- No duplicate code—reuse existing functions.
+- Extend existing files unless a new file is necessary.
+- Justify each dependency.
+- Prefer the smallest working solution, keep every module under 500 lines. If larger than 500 lines, refactor it into smaller components.
+- Consistent naming: camelCase for functions/vars, PascalCase for classes/components.
+- Prioritize clarity and readability over micro-optimizations.
+- Write correct, secure, up-to-date, bug-free code.
+- Treat users as experts; keep explanations brief and precise.
 
 ### Frontend
 - **Framework**: Next.js and React with SSR.

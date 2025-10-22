@@ -1,9 +1,22 @@
-# MemPPI-Atlas (TMP/GPCR PPI Website)
+# MemPPI-Atlas
 
-Browse, search, and inspect protein-protein interactions focused on TMP/GPCR data.
+Interactive web platform for visualizing and exploring protein-protein interaction (PPI) networks. Browse the global network, search for specific proteins, and analyze localized subgraphs with detailed node and edge information.
+
+## Features
+
+- **Global Network View:** Interactive visualization of the entire PPI network with zoom and pan controls
+- **Protein Search:** Find proteins by UniProt ID and view their immediate interaction neighborhoods
+- **Subgraph Analysis:** Focused visualization of query proteins and 1-hop neighbors
+- **Data Tables:** Detailed protein and interaction information with tissue enrichment data
+- **Network Statistics:** At-a-glance metrics and family distribution insights
 
 ## Tech Stack
-- TBD (framework-agnostic templates in docs)
+
+- **Framework:** Next.js 14 (Pages Router) with TypeScript
+- **Database:** Supabase (PostgreSQL)
+- **Styling:** Tailwind CSS
+- **Graph Visualization:** Cytoscape.js
+- **Hosting:** Vercel
 
 ## Quick Start
 
@@ -25,12 +38,12 @@ Browse, search, and inspect protein-protein interactions focused on TMP/GPCR dat
 ```
 
 ## Documentation
-- **[Instructions](docs/instructions.md)** – Project spec (website-focused)
-- **[Architecture](docs/architecture.md)** – Frontend/API/data flow
-- **[API Spec](docs/api-spec.md)** – Endpoints and parameters
-- **[Data](docs/data.md)** – CSV schemas and usage
-- **[Roadmap](docs/roadmap.md)** – MVP → v1
-- **[Common Mistakes](docs/common-mistakes.md)** – Web pitfalls
 
-## Rules & Style
-See `.cursor/rules/` for guardrails and conventions.
+- **[Product Vision](product_vision/Product-Vision.md)** – Goals, features, and tech stack rationale
+- **[Architecture](docs/architecture.md)** – System design, modules, and data flow
+- **[API Spec](docs/api-spec.md)** – REST endpoints and request/response schemas
+- **[Data](docs/data.md)** – CSV schemas, Supabase tables, and query patterns
+- **[UI Spec](docs/ui-spec.md)** – Design system, components, and page layouts
+- **[Test Plan](docs/test-plan.md)** – Testing strategy and coverage goals
+- **[Roadmap](docs/roadmap.md)** – Implementation milestones
+- **[Instructions](docs/instructions.md)** – Canonical functions and patterns

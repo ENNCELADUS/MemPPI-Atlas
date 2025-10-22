@@ -1,132 +1,630 @@
-### UI Development Plan
+# UI Specification
 
-The goal is to build a clean, intuitive, and data-centric interface. We'll follow these steps:
-1.  **Establish a Design System:** Define the core visual identity.
-2.  **Build Reusable Components:** Create a library of common UI elements.
-3.  **Design Page Layouts:** Assemble the components into cohesive page designs.
-
-You can also search https://21st.dev/community/components; it has a ton of components with their AI prompts, you just copy-paste the prompt, it is great!
+This document defines the design system, reusable components, and page layouts for the MemPPI-Atlas web application, based on the Product Vision.
 
 ---
 
-### 1. The Design System
+## Design System
 
-Sticking to a design system ensures a consistent look and feel across your application.
+### Color Palette
 
-*   **Color Palette:**
-    *   **Primary:** A professional blue for interactive elements (`#2563EB`).
-    *   **Background:** A light, neutral gray for the main background (`#F8FAFC`).
-    *   **Surface:** White for cards and sidebars (`#FFFFFF`).
-    *   **Text (Headings):** Dark gray (`#1F2937`).
-    *   **Text (Body):** Medium gray (`#4B5563`).
-    *   **Borders:** Light gray (`#E5E7EB`).
-    *   **Accent/Data Viz:** A set of distinct colors for protein families and network elements (e.g., red for enriched, green, orange, purple).
+#### Base Colors
+- **Primary:** `#2563EB` (Blue) - Interactive elements, buttons, links
+- **Background:** `#F8FAFC` (Light Gray) - Page background
+- **Surface:** `#FFFFFF` (White) - Cards, sidebars, tables
+- **Border:** `#E5E7EB` (Light Gray) - Dividers, table borders
 
-*   **Typography:**
-    *   **Font:** `Inter` or `Lato`. They are clean, modern, and highly legible for data-heavy applications.
-    *   **Headings:** `font-semibold` or `font-bold`.
-    *   **Body Text:** `font-normal`.
+#### Text Colors
+- **Heading:** `#1F2937` (Dark Gray) - Titles, headers
+- **Body:** `#4B5563` (Medium Gray) - Body text, labels
+- **Muted:** `#9CA3AF` (Light Medium Gray) - Secondary text, placeholders
 
-*   **Spacing:**
-    *   Use an 8-point grid system. Set spacing and sizing in multiples of 8px (e.g., `p-4` for 16px padding, `gap-6` for 24px gap). This creates visual rhythm.
+#### Data Visualization (Protein Families)
+- **TM (Transmembrane):** `#3B82F6` (Blue)
+- **TF (Transcription Factor):** `#10B981` (Green)
+- **Kinase:** `#F59E0B` (Amber)
+- **Receptor:** `#8B5CF6` (Purple)
+- **Other/Unknown:** `#6B7280` (Gray)
 
----
-
-### 2. Reusable Components (with AI Prompts)
-
-Use a tool like `v0.dev` or browse `21st.dev/community/components` for inspiration. Here are prompts you can copy-paste to generate these components.
-
-#### **a. Site Header**
-
-A simple, clean header with the site title and logo.
-
-**AI Prompt:**
-```
-Create a responsive site header using Tailwind CSS. On the left, include a simple SVG logo of a network graph and the title "TMP-TMP PPI Networks" in a bold, dark gray font. The header should have a white background with a subtle bottom border. It should have horizontal padding.```
-
-#### **b. Statistic Card**
-
-To display network size numbers in the sidebar.
-
-**AI Prompt:**```
-Create a simple statistic card component using Tailwind CSS. It should have a white background, rounded corners, and a light border. Inside, display a title like "Total Nodes" in a medium gray font, and below it, a large, bold number like "1,845". Use a flexbox layout to align the content.
-```
-
-#### **c. Search Bar**
-
-The fixed search bar at the bottom of the first page.
-
-**AI Prompt:**
-```
-Create a search bar component that is fixed to the bottom center of the page. It should be a wide input field with rounded corners and a light gray border. Inside the input field, show placeholder text: "Search by protein ID, e.g., #P12345 or #P12345,#Q67890". To the right of the input, add a primary blue search button with a search icon. The entire component should have a subtle shadow to lift it off the page.
-```
-
-#### **d. Data Table**
-
-For displaying node and edge information on the second page.
-
-**AI Prompt:**
-```
-Create a clean, modern data table using Tailwind CSS. The table should have a header row with a light gray background and bold, centered text. The table rows should have alternating background colors (zebra striping) for readability. Add a light border around the table and between rows. Make the table responsive so it scrolls horizontally on small screens.
-```
-
-#### **e. Legend**
-
-For explaining the graph's color-coding.
-
-**AI Prompt:**
-```
-Create a legend component for a network graph. It should be a small card with a title "Legend". Below the title, list items vertically. Each item should have a colored circle on the left and a text label on the right, like "● TM Family" or "● TF Family". Use a flexbox layout for alignment.
-```
+#### Network Enrichment
+- **Enriched Edge:** `#EF4444` (Red) - Tissue-enriched interactions
+- **Non-Enriched Edge:** `#9CA3AF` (Gray) - Standard interactions
+- **Experimental Positive:** `#059669` (Dark Green) - Validated interactions
 
 ---
 
-### 3. Page Layouts (with AI Prompts)
+### Typography
 
-Now, let's assemble the components into full-page layouts.
+- **Font Family:** `Inter` (Google Fonts)
+- **Fallback:** `system-ui, -apple-system, sans-serif`
 
-#### **Page 1: Global Network View**
+#### Sizes (Tailwind Classes)
+- **Headings:**
+  - H1: `text-3xl font-bold` (30px)
+  - H2: `text-2xl font-semibold` (24px)
+  - H3: `text-xl font-semibold` (20px)
+- **Body:**
+  - Large: `text-lg` (18px)
+  - Regular: `text-base` (16px)
+  - Small: `text-sm` (14px)
+  - Tiny: `text-xs` (12px)
 
-**Layout Description:**
-*   A two-column layout.
-*   **Left Sidebar (25% width):** Contains the site header, statistics cards, and the network legend.
-*   **Main Content (75% width):** A large area dedicated to the interactive network plot.
-*   **Bottom Bar:** The fixed search bar is overlaid at the bottom.
+---
 
-**AI Prompt for Page 1 Layout:**
+### Spacing & Layout
+
+- **Grid System:** 8px base unit
+- **Container Max Width:** `1440px`
+- **Common Spacing:**
+  - Extra small: `gap-2` (8px)
+  - Small: `gap-4` (16px)
+  - Medium: `gap-6` (24px)
+  - Large: `gap-8` (32px)
+
+---
+
+## Reusable Components
+
+### 1. Site Header
+
+**Purpose:** Branding and navigation bar at the top of every page.
+
+**Design:**
+- White background with subtle bottom border
+- Logo (SVG network icon) + "MemPPI-Atlas" title on the left
+- Height: 64px
+- Horizontal padding: 24px
+
+**Props:**
+```typescript
+interface HeaderProps {
+  title?: string; // Default: "MemPPI-Atlas"
+}
 ```
-Create a full-page dashboard layout for a bioinformatics tool using Tailwind CSS.
-The page should have a main header at the top with a logo and the title "TMP-TMP PPI Networks".
-Below the header, the layout should be split into two vertical columns.
-The left column should be a fixed-width sidebar (around 25% of the page width). Inside this sidebar, add a section title "Network Statistics" followed by three statistic cards in a vertical stack. The cards should display a title and a number. Below the cards, add a "Legend" card with a list of color-coded items.
-The right column (taking the remaining 75% width) is the main content area. Place a large placeholder box here with a light gray background and a label "Interactive Network Visualization Area". This area should fill all available vertical and horizontal space.
-Finally, add a search bar component fixed to the bottom center of the viewport.
+
+**Tailwind Implementation:**
+```jsx
+<header className="bg-white border-b border-gray-200 px-6 py-4">
+  <div className="flex items-center gap-3">
+    {/* Logo SVG */}
+    <NetworkIcon className="w-8 h-8 text-blue-600" />
+    <h1 className="text-2xl font-bold text-gray-900">MemPPI-Atlas</h1>
+  </div>
+</header>
 ```
 
-#### **Page 2: Subgraph View**
+---
 
-**Layout Description:**
-*   A single-column layout focused on search results.
-*   **Header:** The same reusable site header.
-*   **Main Content Area:**
-    *   A title indicating the search query (e.g., "Results for #P12345").
-    *   The subgraph visualization area, with its legend placed beside or below it.
-    *   Two data tables stacked vertically: "Node Information (Top 10)" and "Edge Information (Top 10)".
+### 2. Statistic Card
 
-**AI Prompt for Page 2 Layout:**
+**Purpose:** Display individual metrics in the sidebar (e.g., "Total Nodes: 1,845").
+
+**Design:**
+- White background, rounded corners (`rounded-lg`)
+- Light border
+- Padding: 16px
+- Title (muted gray) + large bold number (dark gray)
+
+**Props:**
+```typescript
+interface StatCardProps {
+  label: string;      // e.g., "Total Nodes"
+  value: number;      // e.g., 1845
+  color?: string;     // Optional accent color for value
+}
 ```
-Create a results page layout for a bioinformatics tool using Tailwind CSS.
-Start with the same responsive site header component from the main page.
-Below the header, in the main content area, add a main heading like "Subgraph for Query: #P12345".
-Under the heading, create a section for the graph visualization. This section should contain a large placeholder box for the "Subgraph Visualization" and, to its right, a smaller "Legend" card.
-Below this visualization section, add a sub-heading "Node Information (Top 10)" followed by a clean, responsive data table with columns like "Protein", "Description", and "Family".
-Finally, add another sub-heading "Edge Information (Top 10)" followed by a similar data table with columns like "Edge", "Protein1", "Protein2", and "Score".
-The entire layout should have comfortable padding.
+
+**Tailwind Implementation:**
+```jsx
+<div className="bg-white rounded-lg border border-gray-200 p-4">
+  <p className="text-sm text-gray-500 mb-1">{label}</p>
+  <p className="text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
+</div>
 ```
 
-### Workflow
+---
 
-1.  **Generate Components:** Use the prompts in `v0.dev` to generate each reusable component first. Tweak the AI's output until it matches your vision.
-2.  **Assemble Pages:** Use the page layout prompts. You can even copy the code from your generated components and paste it into the page prompt to ensure consistency.
-3.  **Get the Code:** Once you are happy with the visual design, `v0` will provide you with the HTML/CSS or React/Vue code.
-4.  **Integrate and Animate:** Integrate this frontend code with your backend data and add interactivity with JavaScript libraries (like Cytoscape.js for the graphs).
+### 3. Search Bar
+
+**Purpose:** Fixed search input at the bottom of Page 1 for protein queries.
+
+**Design:**
+- Fixed to bottom center of viewport
+- Wide input field (max-width: 600px)
+- Rounded corners, light border
+- Placeholder: "Search by protein ID, e.g., P12345 or P12345,Q67890"
+- Blue search button on the right
+- Subtle shadow for elevation
+
+**Props:**
+```typescript
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+  placeholder?: string;
+}
+```
+
+**Tailwind Implementation:**
+```jsx
+<div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+  <div className="bg-white rounded-full shadow-lg border border-gray-300 flex items-center px-4 py-3 w-[600px]">
+    <input
+      type="text"
+      placeholder="Search by protein ID, e.g., P12345 or P12345,Q67890"
+      className="flex-1 outline-none text-gray-700"
+    />
+    <button className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700">
+      Search
+    </button>
+  </div>
+</div>
+```
+
+---
+
+### 4. Data Table
+
+**Purpose:** Display tabular data for nodes and edges on Page 2.
+
+**Design:**
+- Header row: light gray background, bold text, centered
+- Zebra striping: alternating row colors for readability
+- Light borders around table and between rows
+- Responsive: horizontal scroll on small screens
+- Show "Top 10" results
+
+**Props:**
+```typescript
+interface DataTableProps {
+  columns: { key: string; label: string }[];
+  data: Record<string, any>[];
+  caption?: string; // e.g., "Node Information (Top 10)"
+}
+```
+
+**Tailwind Implementation:**
+```jsx
+<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <table className="w-full">
+    <caption className="text-left px-4 py-3 text-lg font-semibold text-gray-900 bg-gray-50">
+      {caption}
+    </caption>
+    <thead className="bg-gray-100">
+      <tr>
+        {columns.map(col => (
+          <th key={col.key} className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            {col.label}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {data.slice(0, 10).map((row, idx) => (
+        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+          {columns.map(col => (
+            <td key={col.key} className="px-4 py-3 text-sm text-gray-700">
+              {row[col.key]}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+```
+
+---
+
+### 5. Legend
+
+**Purpose:** Explain color-coding for protein families and enrichment status.
+
+**Design:**
+- Small card with title "Legend"
+- Vertical list of items
+- Each item: colored circle + label
+- Padding: 16px
+- White background, rounded corners
+
+**Props:**
+```typescript
+interface LegendItem {
+  color: string;
+  label: string;
+}
+
+interface LegendProps {
+  items: LegendItem[];
+}
+```
+
+**Tailwind Implementation:**
+```jsx
+<div className="bg-white rounded-lg border border-gray-200 p-4">
+  <h3 className="text-sm font-semibold text-gray-900 mb-3">Legend</h3>
+  <div className="space-y-2">
+    {items.map((item, idx) => (
+      <div key={idx} className="flex items-center gap-2">
+        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
+        <span className="text-sm text-gray-700">{item.label}</span>
+      </div>
+    ))}
+  </div>
+</div>
+```
+
+---
+
+### 6. Network Graph Container
+
+**Purpose:** Wrapper for Cytoscape.js visualization with loading states.
+
+**Design:**
+- Full width/height container
+- Light gray background when loading
+- Loading spinner centered
+- Border for visual separation
+
+**Props:**
+```typescript
+interface NetworkGraphProps {
+  nodes: CytoscapeNode[];
+  edges: CytoscapeEdge[];
+  isLoading?: boolean;
+  layoutName?: 'fcose' | 'cose' | 'circle';
+}
+```
+
+**Tailwind Implementation:**
+```jsx
+<div className="relative w-full h-full bg-gray-50 rounded-lg border border-gray-200">
+  {isLoading ? (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+    </div>
+  ) : (
+    <div ref={cyRef} className="w-full h-full" data-testid="network-graph" />
+  )}
+</div>
+```
+
+---
+
+### 7. Sidebar
+
+**Purpose:** Statistics panel on the left side of Page 1.
+
+**Design:**
+- Fixed width: 320px
+- White background
+- Vertical stack of StatCards
+- Padding: 24px
+- Sticky positioning
+
+**Props:**
+```typescript
+interface SidebarProps {
+  stats: {
+    totalNodes: number;
+    totalEdges: number;
+    familyCounts: Record<string, number>;
+    enrichedEdgeCount: number;
+  };
+}
+```
+
+**Tailwind Implementation:**
+```jsx
+<aside className="w-80 bg-white border-r border-gray-200 p-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
+  <h2 className="text-xl font-semibold text-gray-900">Network Statistics</h2>
+  <StatCard label="Total Nodes" value={stats.totalNodes} />
+  <StatCard label="Total Edges" value={stats.totalEdges} />
+  <StatCard label="Enriched Edges" value={stats.enrichedEdgeCount} color="text-red-600" />
+  
+  <div className="pt-4 border-t border-gray-200">
+    <h3 className="text-sm font-semibold text-gray-900 mb-3">Family Distribution</h3>
+    {Object.entries(stats.familyCounts).map(([family, count]) => (
+      <div key={family} className="flex justify-between text-sm text-gray-700 mb-2">
+        <span>{family}</span>
+        <span className="font-semibold">{count}</span>
+      </div>
+    ))}
+  </div>
+</aside>
+```
+
+---
+
+## Page Layouts
+
+### Page 1: Global Network View
+
+**URL:** `/`
+
+**Layout Structure:**
+```
+┌─────────────────────────────────────────────────────────┐
+│  Header (Logo + Title)                                  │
+├──────────┬──────────────────────────────────────────────┤
+│          │                                              │
+│ Sidebar  │  Network Visualization Area                 │
+│ (320px)  │  (Cytoscape.js full network)                │
+│          │                                              │
+│ - Stats  │                                              │
+│ - Legend │                                              │
+│          │                                              │
+├──────────┴──────────────────────────────────────────────┤
+│            Search Bar (fixed bottom center)             │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Components Used:**
+- `Header`
+- `Sidebar` with `StatCard` components
+- `Legend`
+- `NetworkGraph` (Cytoscape.js)
+- `SearchBar` (fixed position)
+
+**Responsive Behavior:**
+- Desktop (>1024px): Two-column layout as shown
+- Tablet (768px-1024px): Sidebar collapses to top, network below
+- Mobile (<768px): Vertical stack, search bar full width
+
+**Tailwind Implementation:**
+```jsx
+<div className="min-h-screen bg-gray-50">
+  <Header />
+  <div className="flex">
+    <Sidebar stats={networkStats} />
+    <main className="flex-1 p-6">
+      <div className="h-[calc(100vh-64px-48px)]">
+        <NetworkGraph nodes={nodes} edges={edges} layoutName="fcose" />
+      </div>
+    </main>
+  </div>
+  <SearchBar onSearch={handleSearch} />
+</div>
+```
+
+---
+
+### Page 2: Subgraph View
+
+**URL:** `/subgraph?proteins=P12345,Q67890`
+
+**Layout Structure:**
+```
+┌─────────────────────────────────────────────────────────┐
+│  Header (Logo + Title)                                  │
+├─────────────────────────────────────────────────────────┤
+│  Page Title: "Subgraph for Query: P12345, Q67890"      │
+├──────────────────────────────┬──────────────────────────┤
+│                              │                          │
+│  Subgraph Visualization      │  Legend                  │
+│  (Cytoscape.js focused)      │                          │
+│                              │                          │
+├──────────────────────────────┴──────────────────────────┤
+│  Node Information (Top 10)                              │
+│  [Table with columns: protein, entry_name, ...]         │
+├─────────────────────────────────────────────────────────┤
+│  Edge Information (Top 10)                              │
+│  [Table with columns: edge, protein1, protein2, ...]    │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Components Used:**
+- `Header`
+- `NetworkGraph` (subgraph with focused layout)
+- `Legend`
+- `DataTable` (nodes)
+- `DataTable` (edges)
+
+**Responsive Behavior:**
+- Desktop: Visualization + legend side-by-side
+- Mobile: Vertical stack (visualization, legend, tables)
+
+**Tailwind Implementation:**
+```jsx
+<div className="min-h-screen bg-gray-50">
+  <Header />
+  <main className="container mx-auto px-6 py-8 space-y-8">
+    <h1 className="text-3xl font-bold text-gray-900">
+      Subgraph for Query: {queryProteins.join(', ')}
+    </h1>
+    
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="lg:col-span-3 h-[500px]">
+        <NetworkGraph nodes={subgraphNodes} edges={subgraphEdges} layoutName="cose" />
+      </div>
+      <div>
+        <Legend items={legendItems} />
+      </div>
+    </div>
+    
+    <DataTable
+      caption="Node Information (Top 10)"
+      columns={nodeColumns}
+      data={nodes}
+    />
+    
+    <DataTable
+      caption="Edge Information (Top 10)"
+      columns={edgeColumns}
+      data={edges}
+    />
+  </main>
+</div>
+```
+
+---
+
+## Cytoscape.js Styling
+
+### Node Styles
+
+```javascript
+{
+  selector: 'node',
+  style: {
+    'background-color': 'data(color)', // Determined by family
+    'label': 'data(label)',
+    'width': 30,
+    'height': 30,
+    'font-size': 12,
+    'text-valign': 'bottom',
+    'text-halign': 'center',
+    'text-margin-y': 5,
+    'color': '#1F2937',
+    'overlay-opacity': 0
+  }
+}
+
+// Query nodes (highlighted)
+{
+  selector: 'node[isQuery]',
+  style: {
+    'border-width': 3,
+    'border-color': '#EF4444',
+    'width': 40,
+    'height': 40
+  }
+}
+
+// Family-specific colors
+{
+  selector: 'node[family="TM"]',
+  style: { 'background-color': '#3B82F6' }
+}
+{
+  selector: 'node[family="TF"]',
+  style: { 'background-color': '#10B981' }
+}
+```
+
+### Edge Styles
+
+```javascript
+{
+  selector: 'edge',
+  style: {
+    'width': 'mapData(fusionPredProb, 0, 1, 1, 5)', // 1-5px based on probability
+    'line-color': '#9CA3AF', // Default gray
+    'target-arrow-shape': 'none',
+    'curve-style': 'bezier',
+    'opacity': 0.6
+  }
+}
+
+// Enriched edges (red)
+{
+  selector: 'edge[enrichedTissue]',
+  style: {
+    'line-color': '#EF4444',
+    'opacity': 0.8
+  }
+}
+
+// Experimental positives (green)
+{
+  selector: 'edge[positiveType="experimental"]',
+  style: {
+    'line-color': '#059669',
+    'width': 4,
+    'opacity': 1
+  }
+}
+```
+
+### Layout Configurations
+
+#### Global Network (Page 1)
+```javascript
+{
+  name: 'fcose',
+  quality: 'default',
+  randomize: false,
+  animate: false,
+  fit: true,
+  padding: 30,
+  nodeDimensionsIncludeLabels: true,
+  idealEdgeLength: 100,
+  nodeRepulsion: 4500
+}
+```
+
+#### Subgraph (Page 2)
+```javascript
+{
+  name: 'cose',
+  animate: true,
+  animationDuration: 1000,
+  fit: true,
+  padding: 50,
+  nodeRepulsion: 800000,
+  idealEdgeLength: 80,
+  edgeElasticity: 100
+}
+```
+
+---
+
+## Interaction Patterns
+
+### Global Network (Page 1)
+- **Zoom:** Mouse wheel or pinch gesture
+- **Pan:** Click and drag on background
+- **Node Click:** Show tooltip with protein name and family
+- **Node Hover:** Highlight node and connected edges
+- **Search Submit:** Navigate to `/subgraph?proteins=...`
+
+### Subgraph (Page 2)
+- **Node Click:** Highlight row in node table
+- **Edge Click:** Highlight row in edge table
+- **Table Row Click:** Highlight corresponding node/edge in graph
+
+---
+
+## Accessibility
+
+- **Color Contrast:** All text meets WCAG AA standards (4.5:1 ratio)
+- **Keyboard Navigation:** Tab through search bar, buttons, table rows
+- **Screen Readers:** 
+  - ARIA labels on graph containers
+  - Table headers with proper scope
+  - Alt text for logo
+- **Focus Indicators:** Visible outline on all interactive elements
+
+---
+
+## Responsive Breakpoints
+
+- **Mobile:** `< 768px` (sm)
+- **Tablet:** `768px - 1024px` (md)
+- **Desktop:** `> 1024px` (lg)
+- **Large Desktop:** `> 1440px` (xl)
+
+### Responsive Adjustments
+- **Mobile:** Single column, stacked components, search bar full width
+- **Tablet:** Sidebar above main content, reduced graph height
+- **Desktop:** Two-column layout as designed
+
+---
+
+## Animation & Transitions
+
+- **Button Hover:** `transition-colors duration-200`
+- **Graph Layout:** Animate layout changes over 1 second
+- **Loading States:** Spinner with `animate-spin`
+- **Table Row Hover:** Light background highlight with `hover:bg-gray-100`
+
+---
+
+## Future UI Enhancements (Out of Scope for MVP)
+
+- Dark mode toggle
+- Customizable color schemes for families
+- Advanced filter UI with sliders and multi-select dropdowns
+- Export graph as PNG/SVG button
+- Protein detail modal on node click
+- Breadcrumb navigation
+- Toast notifications for errors/success messages
