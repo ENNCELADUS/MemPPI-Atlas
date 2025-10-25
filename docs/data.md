@@ -19,7 +19,7 @@ CSV files stored in `/data` directory (used for initial import only):
 | `Protein2` | String | UniProt accession of second protein | `Q67890` |
 | `Fusion_Pred_Prob` | Float | Model probability that the edge reflects a fusion-derived interaction (0-1) | `0.95` |
 | `Enriched_tissue` | String | Tissue where interaction is enriched; `NA` if not available | `Brain` or `NA` |
-| `Tissue_enriched_confidence` | Float | Confidence score for the tissue enrichment (0-1); `NA` if not available | `0.89` or `NA` |
+| `Tissue_enriched_confidence` | String | Confidence level for the tissue enrichment; `NA` if not available | `high confidence`, `low confidence`, or `NA` |
 | `Positive_type` | String | Source label for the interaction | `prediction`, `experimental` |
 
 **Notes:**
@@ -80,7 +80,7 @@ CREATE TABLE edges (
   protein2 TEXT NOT NULL,                  -- Target protein
   fusion_pred_prob REAL,                   -- Fusion_Pred_Prob (0-1)
   enriched_tissue TEXT,                    -- Enriched_tissue or NULL
-  tissue_enriched_confidence REAL,         -- Tissue_enriched_confidence or NULL
+  tissue_enriched_confidence TEXT,         -- Confidence level (high confidence, low confidence) or NULL
   positive_type TEXT,                      -- Positive_type
   FOREIGN KEY (protein1) REFERENCES nodes(protein),
   FOREIGN KEY (protein2) REFERENCES nodes(protein)
