@@ -48,3 +48,4 @@ venv/
 
 # Data (tracked via Git LFS; see .gitattributes)
 datasets/
+data/supabase-import/
