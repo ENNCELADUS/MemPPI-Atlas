@@ -14,24 +14,6 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
-// Helper to create a query builder mock
-const createQueryBuilder = (result: any) => ({
-  select: jest.fn().mockReturnValue({
-    not: jest.fn().mockResolvedValue(result),
-    eq: jest.fn().mockResolvedValue(result),
-    then: (resolve: any) => resolve(result),
-  }),
-  not: jest.fn().mockReturnValue({
-    select: jest.fn().mockResolvedValue(result),
-    then: (resolve: any) => resolve(result),
-  }),
-  eq: jest.fn().mockReturnValue({
-    select: jest.fn().mockResolvedValue(result),
-    then: (resolve: any) => resolve(result),
-  }),
-  then: (resolve: any) => resolve(result),
-});
-
 describe('/api/network/stats', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -40,13 +22,10 @@ describe('/api/network/stats', () => {
   it('should return 200 with correct stats structure', async () => {
     const mockFrom = supabase.from as jest.Mock;
     
-    let nodeSelectCallCount = 0;
-    
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
-            nodeSelectCallCount++;
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               // First call: count nodes
               return Promise.resolve({ count: 100, error: null });
@@ -66,8 +45,8 @@ describe('/api/network/stats', () => {
       }
       if (table === 'edges') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
-            const selectResult = Promise.resolve({ count: 500, error: null });
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
+            const selectResult = Promise.resolve({ count: opts?.count === 'exact' ? 500 : 500, error: null });
             return {
               not: jest.fn().mockResolvedValue({ count: 50, error: null }),
               eq: jest.fn().mockResolvedValue({ count: 300, error: null }),
@@ -117,7 +96,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 7, error: null });
             } else {
@@ -169,7 +148,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 6, error: null });
             } else {
@@ -211,7 +190,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 100, error: null });
             } else {
@@ -250,7 +229,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 100, error: null });
             } else {
@@ -311,7 +290,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 100, error: null });
             } else {
@@ -346,7 +325,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 100, error: null });
             } else {
@@ -381,7 +360,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 100, error: null });
             } else {
@@ -423,7 +402,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 100, error: null });
             } else {
@@ -465,7 +444,7 @@ describe('/api/network/stats', () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((cols: string, opts?: any) => {
+          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
               return Promise.resolve({ count: 0, error: null });
             } else {

@@ -100,15 +100,21 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Create `Sidebar` component with statistics section
 - Create `StatCard` component for individual metrics
 - Fetch data from `/api/network/stats` on page load
-- Display total nodes, total edges, and family distribution
+- Display total nodes, total edges, enriched edges, and family distribution
 - Style with Tailwind following UI spec
 - Make sidebar sticky with scroll
+- Handle loading and error states
 
 **Acceptance Criteria:**
-- ✅ Page 1 renders with sidebar on the left (320px width)
-- ✅ Statistics display correctly from API data
-- ✅ Family distribution shows all families with counts
-- ✅ Responsive layout works on tablet/mobile
+- ✅ Page 1 renders with sidebar on the left (320px width on desktop)
+- ✅ Statistics display correctly from API data (Total Nodes, Total Edges, Enriched Edges)
+- ✅ Family distribution shows all families with counts, sorted by count
+- ✅ Responsive layout works on tablet/mobile (stacks vertically)
+- ✅ Loading state shows skeleton UI
+- ✅ Error state displays error message to user
+- ✅ Network visualization placeholder displayed in main area
+
+**Note:** Enriched Edges refers to edges with tissue enrichment (`enriched_tissue` field). The `predictedEdgeCount` from the API is not displayed in this milestone.
 
 **Estimated Time:** 3-4 hours
 
