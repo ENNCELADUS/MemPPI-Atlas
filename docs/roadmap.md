@@ -145,6 +145,16 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - ✅ Pan works with click and drag
 - ✅ Legend shows family colors correctly
 
+**Notes (Performance and scope):**
+- Decision: Use Option A — server-side edge filtering for performance.
+  - Goal: Initial render under 10 seconds on typical desktop.
+- Visualization: Dense force-directed “hairball” (fcose) with all nodes shown.
+  - Nodes: uniform size; cool neutral palette only (light blues/slates/grays; no red/green/yellow).
+  - Edges: translucent blue hues; subtle width by probability.
+  - Labels: hidden by default; shown on node click only.
+- Scope for M6: Show network view only (no tabs/download).
+- TODO: Add Download/Export control (PNG/SVG) in a later milestone.
+
 **Estimated Time:** 6-8 hours
 
 ---

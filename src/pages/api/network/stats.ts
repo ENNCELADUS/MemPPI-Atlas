@@ -1,7 +1,93 @@
 // API endpoint for network statistics
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { NetworkStats } from '@/lib/types';
+
+const EDGE_COUNT_BATCH_INITIAL = 50000;
+const EDGE_COUNT_BATCH_MIN = 5000;
+
+type EdgeColumn = 'enriched_tissue' | 'positive_type';
+
+async function countEdgesByScanning(
+  column: EdgeColumn,
+  predicate: (value: string | null) => boolean
+): Promise<number> {
+  let offset = 0;
+  let batchSize = EDGE_COUNT_BATCH_INITIAL;
+  let total = 0;
+
+  while (true) {
+    const to = offset + batchSize - 1;
+    const { data, error } = await supabase
+      .from('edges')
+      .select(column)
+      .range(offset, to);
+
+    if (error) {
+      if ((error as PostgrestError).code === '57014' && batchSize > EDGE_COUNT_BATCH_MIN) {
+        batchSize = Math.max(EDGE_COUNT_BATCH_MIN, Math.floor(batchSize / 2));
+        console.warn(
+          `Edge scan for column "${column}" timed out at offset ${offset}; retrying with batchSize=${batchSize}`
+        );
+        continue;
+      }
+      throw error;
+    }
+
+    const rows = (data as { [key in EdgeColumn]: string | null }[]) || [];
+    if (rows.length === 0) {
+      break;
+    }
+
+    rows.forEach((row) => {
+      if (predicate(row[column] ?? null)) {
+        total += 1;
+      }
+    });
+
+    offset += rows.length;
+    if (rows.length < batchSize) {
+      break;
+    }
+  }
+
+  return total;
+}
+
+async function countEnrichedEdges(): Promise<number> {
+  const query = supabase
+    .from('edges')
+    .select('*', { count: 'exact', head: true })
+    .not('enriched_tissue', 'is', null)
+    .neq('enriched_tissue', 'NA');
+
+  const { count, error } = await query;
+  if (!error && typeof count === 'number') {
+    return count;
+  }
+
+  console.warn('Falling back to batch scan for enriched edge count', error);
+  return countEdgesByScanning('enriched_tissue', (value) => !!value && value !== 'NA');
+}
+
+async function countPredictedEdges(): Promise<number> {
+  const query = supabase
+    .from('edges')
+    .select('*', { count: 'exact', head: true })
+    .eq('positive_type', 'prediction');
+
+  const { count, error } = await query;
+  if (!error && typeof count === 'number') {
+    return count;
+  }
+
+  console.warn('Falling back to batch scan for predicted edge count', error);
+  return countEdgesByScanning(
+    'positive_type',
+    (value) => (value || '').toLowerCase() === 'prediction'
+  );
+}
 
 /**
  * GET /api/network/stats
@@ -60,27 +146,18 @@ export default async function handler(
     });
 
     // Count enriched edges (enriched_tissue IS NOT NULL)
-    const enrichedQuery = supabase
-      .from('edges')
-      .select('*', { count: 'exact', head: true })
-      .not('enriched_tissue', 'is', null);
-    
-    const { count: enrichedEdgeCount, error: enrichedError } = await enrichedQuery;
-
-    if (enrichedError) {
+    let enrichedEdgeCount = 0;
+    try {
+      enrichedEdgeCount = await countEnrichedEdges();
+    } catch (enrichedError) {
       console.error('Database error counting enriched edges:', enrichedError);
       return res.status(500).json({ error: 'Failed to count enriched edges' });
     }
 
-    // Count predicted edges (positive_type = 'prediction')
-    const predictedQuery = supabase
-      .from('edges')
-      .select('*', { count: 'exact', head: true })
-      .eq('positive_type', 'prediction');
-    
-    const { count: predictedEdgeCount, error: predictedError } = await predictedQuery;
-
-    if (predictedError) {
+    let predictedEdgeCount = 0;
+    try {
+      predictedEdgeCount = await countPredictedEdges();
+    } catch (predictedError) {
       console.error('Database error counting predicted edges:', predictedError);
       return res.status(500).json({ error: 'Failed to count predicted edges' });
     }
@@ -99,4 +176,3 @@ export default async function handler(
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
-

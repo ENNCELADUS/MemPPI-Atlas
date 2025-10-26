@@ -1,12 +1,25 @@
-import { useEffect, useState } from 'react';
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
-import { NetworkStats } from '@/lib/types';
+import { useCallback, useEffect, useState } from 'react';
+import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
+import Legend from '@/components/Legend';
+import NetworkGraph from '@/components/NetworkGraph';
+import type { NetworkData, NetworkStats } from '@/lib/types';
+import type { CytoscapeElements } from '@/lib/graphUtils';
+import { toCytoscapeElements } from '@/lib/graphUtils';
 
 export default function Home() {
   const [stats, setStats] = useState<NetworkStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [graphElements, setGraphElements] = useState<CytoscapeElements>([]);
+  const [graphLoading, setGraphLoading] = useState<boolean>(true);
+  const [graphError, setGraphError] = useState<string | null>(null);
+
+  const handleGraphError = useCallback((err: unknown) => {
+    const message = err instanceof Error ? err.message : 'Failed to initialise network viewer';
+    setGraphError(message);
+    console.error('Error initialising Cytoscape:', err);
+  }, []);
 
   useEffect(() => {
     async function fetchStats() {
@@ -26,6 +39,37 @@ export default function Home() {
     }
 
     fetchStats();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchNetwork() {
+      try {
+        setGraphLoading(true);
+        setGraphError(null);
+        const response = await fetch('/api/network');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch network: ${response.statusText}`);
+        }
+        const data = (await response.json()) as NetworkData;
+        if (cancelled) return;
+        setGraphElements(toCytoscapeElements(data));
+      } catch (err) {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : 'Failed to fetch network';
+        setGraphError(message);
+        console.error('Error fetching network:', err);
+      } finally {
+        if (!cancelled) {
+          setGraphLoading(false);
+        }
+      }
+    }
+
+    fetchNetwork();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -55,29 +99,19 @@ export default function Home() {
         ) : null}
 
         <main className="flex-1 p-6">
-          <div className="bg-white rounded-lg border border-gray-200 h-[calc(100vh-64px-48px)] flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <svg
-                className="w-16 h-16 mx-auto mb-4 text-gray-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="12" cy="12" r="3" strokeWidth="2" />
-                <circle cx="6" cy="6" r="2" strokeWidth="2" />
-                <circle cx="18" cy="6" r="2" strokeWidth="2" />
-                <circle cx="6" cy="18" r="2" strokeWidth="2" />
-                <circle cx="18" cy="18" r="2" strokeWidth="2" />
-                <line x1="12" y1="12" x2="6" y2="6" strokeWidth="1.5" />
-                <line x1="12" y1="12" x2="18" y2="6" strokeWidth="1.5" />
-                <line x1="12" y1="12" x2="6" y2="18" strokeWidth="1.5" />
-                <line x1="12" y1="12" x2="18" y2="18" strokeWidth="1.5" />
-              </svg>
-              <p className="text-lg font-semibold mb-2">Network Visualization</p>
-              <p className="text-sm">
-                Interactive network graph will be displayed here in a future milestone
-              </p>
+          <div className="relative h-[calc(100vh-64px-48px)]">
+            <NetworkGraph elements={graphElements} isLoading={graphLoading} onError={handleGraphError} />
+            <div className="pointer-events-auto absolute top-4 right-4 z-20">
+              <Legend />
             </div>
+            {graphError && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center">
+                <div className="max-w-sm rounded-lg border border-red-200 bg-white/90 p-4 text-center shadow">
+                  <p className="text-sm font-semibold text-red-600">Unable to load network</p>
+                  <p className="mt-2 text-xs text-red-500">{graphError}</p>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
