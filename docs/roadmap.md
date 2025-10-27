@@ -183,21 +183,25 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 
 ---
 
-## Milestone 8: Subgraph API Endpoint
+## Milestone 8: Subgraph API Endpoint ✅ COMPLETED
 
 **Goal:** Implement `/api/subgraph` endpoint to fetch query proteins and neighbors.
 
 **Tasks:**
-- Create `/pages/api/subgraph.ts`
-- Parse `proteins` query parameter
-- Query edges where protein1 OR protein2 matches any query protein
-- Extract unique neighbor protein IDs from edges
-- Query node details for all proteins in subgraph
-- Mark queried proteins with `isQuery: true`
-- Return filtered nodes and edges
-- Handle 404 when proteins not found
-- Handle 400 for missing/invalid parameters
-- Write unit tests
+- ✅ Create `/pages/api/subgraph.ts`
+- ✅ Parse `proteins` query parameter (case-insensitive, comma-separated)
+- ✅ Query edges where protein1 OR protein2 matches any query protein
+- ✅ Extract unique neighbor protein IDs from edges
+- ✅ Query node details for all proteins in subgraph
+- ✅ Mark queried proteins with `isQuery: true`
+- ✅ Return filtered nodes and edges
+- ✅ Handle 404 when proteins not found
+- ✅ Handle 400 for missing/invalid parameters
+- ✅ Write unit tests (14 tests, all passing)
+- ✅ Add filtering parameters (minProb, preferExperimental, maxEdges, maxNodes)
+- ✅ Include truncation metadata when limits exceeded
+- ✅ Update API spec documentation
+- ✅ Update type definitions (SubgraphData interface)
 
 **Acceptance Criteria:**
 - ✅ `GET /api/subgraph?proteins=P12345` returns subgraph
@@ -206,8 +210,11 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - ✅ Returns 404 if protein doesn't exist
 - ✅ Returns 400 if `proteins` param missing
 - ✅ Tests cover single and multiple protein queries
+- ✅ Case-insensitive protein ID handling
+- ✅ Handles proteins with no interactions (returns 200 with empty edges)
+- ✅ Filtering parameters match `/api/network` defaults for consistency
 
-**Estimated Time:** 4-5 hours
+**Completed:** All acceptance criteria met
 
 ---
 

@@ -83,7 +83,11 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 **Purpose:** Fetch a subgraph containing the queried protein(s) and their immediate neighbors (one-step connections) for Page 2.
 
 **Query Parameters:**
-- `proteins` (required, string): Comma-separated list of UniProt accessions (e.g., `P12345` or `P12345,Q67890`)
+- `proteins` (required, string): Comma-separated list of UniProt accessions (e.g., `P12345` or `P12345,Q67890`). Case-insensitive; returned as uppercase.
+- `minProb` (optional, number): Minimum fusion prediction probability (default: `0.8`, range: 0-1)
+- `preferExperimental` (optional, boolean): Prefer experimental edges over predicted (default: `true`)
+- `maxEdges` (optional, number): Maximum number of edges to return (default: `5000`, max: `20000`)
+- `maxNodes` (optional, number): Maximum number of nodes to return (default: `1000`, max: `5000`)
 
 **Response:**
 ```json
@@ -116,18 +120,35 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
       "target": "Q67890",
       "fusionPredProb": 0.95,
       "enrichedTissue": "Brain",
-      "tissueEnrichedConfidence": 0.89,
+      "tissueEnrichedConfidence": "high confidence",
       "positiveType": "prediction"
     }
-  ]
+  ],
+  "truncated": {
+    "nodes": false,
+    "edges": false
+  }
 }
 ```
 
+**Response Fields:**
+- `query`: Array of queried protein IDs (uppercase)
+- `nodes`: Array of nodes with `isQuery` flag (true for queried proteins, false for neighbors)
+- `edges`: Array of edges connecting proteins in the subgraph
+- `truncated` (optional): Present only if results were limited by maxNodes/maxEdges
+
 **Status Codes:**
-- `200 OK`: Success
+- `200 OK`: Success (even if only some queried proteins exist)
 - `400 Bad Request`: Missing or invalid `proteins` parameter
 - `404 Not Found`: None of the queried proteins exist in the dataset
 - `500 Internal Server Error`: Database error
+
+**Notes:**
+- Protein IDs are case-insensitive but always returned as uppercase
+- If a queried protein has no edges, it will still be returned with an empty edges array (200)
+- If multiple proteins are queried and only some exist, returns data for found proteins (200)
+- Edge filtering follows same defaults as `/api/network` for consistency
+- Query proteins are always included in results even if maxNodes limit is exceeded
 
 ---
 

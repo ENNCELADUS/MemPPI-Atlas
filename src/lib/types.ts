@@ -77,6 +77,10 @@ export interface SubgraphData {
   query: string[];                // Queried protein IDs
   nodes: NodeResponse[];
   edges: EdgeResponse[];
+  truncated?: {                   // Optional truncation metadata
+    nodes: boolean;
+    edges: boolean;
+  };
 }
 
 /**
