@@ -171,6 +171,67 @@ export default async function handler(
       );
     }
 
+    // Step 3b: Fetch additional edges where both endpoints are within the limited node set
+    const limitedProteinIdsSet = new Set(limitedProteinIds);
+    const existingEdgeIds = new Set(edges.map(edge => edge.edge));
+    let remainingEdgeCapacity = Math.max(0, maxEdges - edges.length);
+
+    const addEdges = (edgeList: Edge[] | null | undefined) => {
+      if (!edgeList || remainingEdgeCapacity <= 0) return;
+      for (const edge of edgeList) {
+        if (!limitedProteinIdsSet.has(edge.protein1) || !limitedProteinIdsSet.has(edge.protein2)) {
+          continue;
+        }
+        if (existingEdgeIds.has(edge.edge)) {
+          continue;
+        }
+        edges.push(edge);
+        existingEdgeIds.add(edge.edge);
+        remainingEdgeCapacity -= 1;
+        if (remainingEdgeCapacity <= 0) break;
+      }
+    };
+
+    if (remainingEdgeCapacity > 0) {
+      if (preferExperimental) {
+        const { data: intraExperimental, error: intraExperimentalErr } = await supabase
+          .from('edges')
+          .select(edgeSelect)
+          .eq('positive_type', 'experimental')
+          .in('protein1', limitedProteinIds)
+          .in('protein2', limitedProteinIds)
+          .limit(remainingEdgeCapacity);
+
+        if (intraExperimentalErr) {
+          console.warn('Experimental intra-subgraph edges query error:', intraExperimentalErr);
+        }
+
+        addEdges(intraExperimental as Edge[] | null | undefined);
+      }
+
+      if (remainingEdgeCapacity > 0) {
+        const { data: intraPredicted, error: intraPredictedErr } = await supabase
+          .from('edges')
+          .select(edgeSelect)
+          .gte('fusion_pred_prob', minProb)
+          .in('protein1', limitedProteinIds)
+          .in('protein2', limitedProteinIds)
+          .order('fusion_pred_prob', { ascending: false })
+          .limit(remainingEdgeCapacity);
+
+        if (intraPredictedErr) {
+          console.warn('Predicted intra-subgraph edges query error:', intraPredictedErr);
+        }
+
+        addEdges(intraPredicted as Edge[] | null | undefined);
+      }
+    }
+
+    if (edges.length >= maxEdges) {
+      edgesTruncated = true;
+      edges = edges.slice(0, maxEdges);
+    }
+
     // Step 4: Query node details for all proteins
     const { data: nodesData, error: nodesErr } = await supabase
       .from('nodes')

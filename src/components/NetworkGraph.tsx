@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type cytoscapeType from 'cytoscape';
 import type { EdgeDefinition, ElementDefinition, EventObject, LayoutOptions, NodeDefinition } from 'cytoscape';
 import fcose from 'cytoscape-fcose';
@@ -24,12 +24,24 @@ interface NetworkGraphProps {
   isLoading?: boolean;
   progress?: { nodesLoaded: boolean; edgesLoaded: number; edgesTotal: number } | null;
   onError?: (err: unknown) => void;
+  layout?: LayoutOptions;
 }
 
-export default function NetworkGraph({ elements, isLoading, progress, onError }: NetworkGraphProps) {
+export default function NetworkGraph({ elements, isLoading, progress, onError, layout = fcoseLayout }: NetworkGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscapeType.Core | null>(null);
   const [ready, setReady] = useState(false);
+
+  const ensureQueryPriority = useCallback(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.batch(() => {
+      const queryNodes = cy.nodes('[?isQuery]');
+      if (queryNodes.length === 0) return;
+      queryNodes.style({ 'z-index': 1000 });
+      queryNodes.connectedEdges().style({ 'z-index': 900 });
+    });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -102,14 +114,19 @@ export default function NetworkGraph({ elements, isLoading, progress, onError }:
     cy.add(nodeElements);
     cy.add(edgeElements.slice(0, Math.min(seedEdges, edgeElements.length)));
     cy.endBatch();
+    ensureQueryPriority();
     cy.resize();
 
     try {
-      cy.layout(fcoseLayout).run();
+      const layoutInstance = cy.layout(layout);
+      layoutInstance.one?.('layoutstop', ensureQueryPriority);
+      layoutInstance.run();
     } catch {
-      // fallback to built-in cose if fcose fails
+      // fallback to built-in cose if layout fails
       const fallbackLayout: LayoutOptions = { name: 'cose', animate: false, fit: true, padding: 30 };
-      cy.layout(fallbackLayout).run();
+      const fallbackInstance = cy.layout(fallbackLayout);
+      fallbackInstance.one?.('layoutstop', ensureQueryPriority);
+      fallbackInstance.run();
     }
     cy.fit(undefined, 30);
 
@@ -122,10 +139,11 @@ export default function NetworkGraph({ elements, isLoading, progress, onError }:
       const end = Math.min(added + batchSize, edgeElements.length);
       cyRef.current.add(edgeElements.slice(added, end));
       added = end;
+      ensureQueryPriority();
       if (added < edgeElements.length) setTimeout(addMore, 0);
     }
     setTimeout(addMore, 0);
-  }, [elements, ready]);
+  }, [elements, ready, layout, ensureQueryPriority]);
 
   useEffect(() => {
     if (!ready || !cyRef.current) return;

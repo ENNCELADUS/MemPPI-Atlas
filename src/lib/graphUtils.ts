@@ -2,7 +2,7 @@
 // and provide color mappings consistent with Milestone 6 design.
 
 import type { EdgeDefinition, ElementDefinition, NodeDefinition } from 'cytoscape';
-import { EdgeResponse, NetworkData, NodeResponse } from './types';
+import { EdgeResponse, NodeResponse } from './types';
 
 export type CytoscapeNode = NodeDefinition;
 export type CytoscapeEdge = EdgeDefinition;
@@ -37,13 +37,14 @@ export function getEdgeColor(edge: EdgeResponse): string {
 
 export function nodesToCy(nodes: NodeResponse[]): CytoscapeNode[] {
   return nodes.map((node) => {
+    const isQuery = Boolean(node.isQuery);
     const nodeDef: CytoscapeNode = {
       data: {
         id: node.id,
         label: node.label,
         family: node.family || 'Other',
-        color: getFamilyColor(node.family),
-        isQuery: node.isQuery ?? false,
+        color: isQuery ? '#1E3A8A' : getFamilyColor(node.family),
+        isQuery,
       },
     };
     return nodeDef;
@@ -67,6 +68,11 @@ export function edgesToCy(edges: EdgeResponse[]): CytoscapeEdge[] {
   });
 }
 
-export function toCytoscapeElements(data: NetworkData): CytoscapeElements {
+type GraphLikeData = {
+  nodes: NodeResponse[];
+  edges: EdgeResponse[];
+};
+
+export function toCytoscapeElements(data: GraphLikeData): CytoscapeElements {
   return [...nodesToCy(data.nodes), ...edgesToCy(data.edges)];
 }
