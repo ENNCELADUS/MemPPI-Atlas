@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import Legend from '@/components/Legend';
@@ -21,6 +21,7 @@ export default function Home() {
     maxEdges: 50_000,
     onlyVisibleEdges: false,
   });
+  const networkCacheRef = useRef<Map<string, NetworkData>>(new Map());
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -59,9 +60,17 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    const cacheKey = queryString || '__default__';
     async function fetchNetwork() {
       try {
-        setGraphLoading(true);
+        const cached = networkCacheRef.current.get(cacheKey);
+        if (cached) {
+          setGraphElements(toCytoscapeElements(cached));
+          setGraphMeta(cached.meta ?? null);
+          setGraphLoading(false);
+        } else {
+          setGraphLoading(true);
+        }
         setGraphError(null);
         const response = await fetch(`/api/network${queryString ? `?${queryString}` : ''}`);
         if (!response.ok) {
@@ -69,6 +78,7 @@ export default function Home() {
         }
         const data = (await response.json()) as NetworkData;
         if (cancelled) return;
+        networkCacheRef.current.set(cacheKey, data);
         setGraphElements(toCytoscapeElements(data));
         const meta = data.meta ?? null;
         setGraphMeta(meta);

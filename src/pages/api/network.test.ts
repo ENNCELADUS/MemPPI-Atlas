@@ -798,5 +798,46 @@ describe('/api/network', () => {
     expect(data.edges).toHaveLength(0);
     expect(data.meta.filteredEdges).toBe(0);
   });
+
+  it('clamps minProb between 0 and 1', async () => {
+    const mockNodes: Node[] = [
+      {
+        protein: 'P00001',
+        entry_name: 'NODE1',
+        description: null,
+        gene_names: null,
+        family: null,
+        expression_tissue: null,
+      },
+    ];
+
+    const predictionEdges: Edge[] = [
+      {
+        edge: 'PRED1',
+        protein1: 'P00001',
+        protein2: 'P00001',
+        fusion_pred_prob: 0.9,
+        enriched_tissue: null,
+        tissue_enriched_confidence: null,
+        positive_type: 'prediction',
+      },
+    ];
+
+    setupSupabaseMock({
+      nodes: { data: mockNodes },
+      edges: {
+        totalCount: predictionEdges.length,
+        predictionEdges,
+        predictionCount: predictionEdges.length,
+      },
+    });
+
+    const { req, res } = createMocks({ method: 'GET', query: { minProb: '5' } });
+
+    await handler(req, res);
+
+    const data = JSON.parse(res._getData());
+    expect(data.edges).toHaveLength(1);
+  });
 });
 
