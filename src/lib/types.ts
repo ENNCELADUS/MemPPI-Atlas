@@ -65,9 +65,24 @@ export interface NetworkStats {
 /**
  * Full network data response
  */
+export interface NetworkTimings {
+  fetchNodesMs?: number;
+  fetchEdgesMs?: number;
+  transformMs?: number;
+  totalMs?: number;
+}
+
+export interface NetworkMeta {
+  totalNodes: number;
+  totalEdges: number;
+  filteredEdges: number;
+  timings?: NetworkTimings;
+}
+
 export interface NetworkData {
   nodes: NodeResponse[];
   edges: EdgeResponse[];
+  meta?: NetworkMeta;
 }
 
 /**

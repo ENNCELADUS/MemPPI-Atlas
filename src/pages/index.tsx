@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import Legend from '@/components/Legend';
 import NetworkGraph from '@/components/NetworkGraph';
 import SearchBar from '@/components/SearchBar';
-import type { NetworkData, NetworkStats } from '@/lib/types';
+import type { NetworkData, NetworkMeta, NetworkStats } from '@/lib/types';
 import type { CytoscapeElements } from '@/lib/graphUtils';
 import { toCytoscapeElements } from '@/lib/graphUtils';
 
@@ -15,6 +15,21 @@ export default function Home() {
   const [graphElements, setGraphElements] = useState<CytoscapeElements>([]);
   const [graphLoading, setGraphLoading] = useState<boolean>(true);
   const [graphError, setGraphError] = useState<string | null>(null);
+  const [graphMeta, setGraphMeta] = useState<NetworkMeta | null>(null);
+  const [filters, setFilters] = useState({
+    positiveTypes: ['experiment'],
+    maxEdges: 50_000,
+    onlyVisibleEdges: false,
+  });
+
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('maxEdges', String(filters.maxEdges));
+    if (filters.positiveTypes.length > 0) {
+      params.set('positiveType', filters.positiveTypes.join(','));
+    }
+    return params.toString();
+  }, [filters.maxEdges, filters.positiveTypes]);
 
   const handleGraphError = useCallback((err: unknown) => {
     const message = err instanceof Error ? err.message : 'Failed to initialise network viewer';
@@ -48,13 +63,15 @@ export default function Home() {
       try {
         setGraphLoading(true);
         setGraphError(null);
-        const response = await fetch('/api/network');
+        const response = await fetch(`/api/network${queryString ? `?${queryString}` : ''}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch network: ${response.statusText}`);
         }
         const data = (await response.json()) as NetworkData;
         if (cancelled) return;
         setGraphElements(toCytoscapeElements(data));
+        const meta = data.meta ?? null;
+        setGraphMeta(meta);
       } catch (err) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : 'Failed to fetch network';
@@ -71,7 +88,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryString]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -96,12 +113,21 @@ export default function Home() {
             </div>
           </div>
         ) : stats ? (
-          <Sidebar stats={stats} />
+          <Sidebar
+            stats={stats}
+            meta={graphMeta}
+            filters={filters}
+            onChange={setFilters}
+          />
         ) : null}
 
         <main className="flex-1 p-6">
           <div className="relative h-[calc(100vh-64px-48px)]">
-            <NetworkGraph elements={graphElements} isLoading={graphLoading} onError={handleGraphError} />
+            <NetworkGraph
+              elements={graphElements}
+              isLoading={graphLoading}
+              onError={handleGraphError}
+            />
             <div className="pointer-events-auto absolute top-4 right-4 z-20">
               <Legend />
             </div>
