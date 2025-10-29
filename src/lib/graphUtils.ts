@@ -45,6 +45,12 @@ export function nodesToCy(nodes: NodeResponse[]): CytoscapeNode[] {
         family: node.family || 'Other',
         color: isQuery ? '#1E3A8A' : getFamilyColor(node.family),
         isQuery,
+        description: node.description,
+        geneNames: node.geneNames,
+        expressionTissue: node.expressionTissue,
+        tooltip: [node.label, node.geneNames, node.family]
+          .filter(Boolean)
+          .join(' · '),
       },
     };
     return nodeDef;

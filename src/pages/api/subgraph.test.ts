@@ -6,6 +6,7 @@
 import { createMocks } from 'node-mocks-http';
 import handler from './subgraph';
 import { supabase } from '@/lib/supabase';
+import type { Edge, Node, SubgraphData } from '@/lib/types';
 
 // Mock the Supabase client
 jest.mock('@/lib/supabase', () => ({
@@ -15,13 +16,19 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // Helper to setup Supabase mocks
-function setupSupabaseMock(edgesData: any[], nodesData: any[], edgesError: any = null, nodesError: any = null) {
+function setupSupabaseMock(
+  edgesData: Edge[] | null,
+  nodesData: Node[] | null,
+  edgesError: Error | null = null,
+  nodesError: Error | null = null,
+) {
   const mockFrom = supabase.from as jest.Mock;
   mockFrom.mockImplementation((table: string) => {
     if (table === 'edges') {
       const mockChain = {
         eq: jest.fn().mockReturnThis(),
         or: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
         limit: jest.fn().mockResolvedValue({ data: edgesData, error: edgesError }),
         gte: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
@@ -262,9 +269,9 @@ describe('/api/subgraph', () => {
     });
     await handler(req, res);
 
-    const data = JSON.parse(res._getData());
-    const queryNode = data.nodes.find((n: any) => n.id === 'P12345');
-    const neighborNode = data.nodes.find((n: any) => n.id === 'Q67890');
+    const data = JSON.parse(res._getData()) as SubgraphData;
+    const queryNode = data.nodes.find((n) => n.id === 'P12345');
+    const neighborNode = data.nodes.find((n) => n.id === 'Q67890');
 
     expect(queryNode.isQuery).toBe(true);
     expect(neighborNode.isQuery).toBe(false);

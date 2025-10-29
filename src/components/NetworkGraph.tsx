@@ -1,12 +1,35 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type cytoscapeType from 'cytoscape';
-import type { EdgeDefinition, ElementDefinition, EventObject, LayoutOptions, NodeDefinition } from 'cytoscape';
+import type {
+  EdgeDefinition,
+  ElementDefinition,
+  EventObject,
+  LayoutOptions,
+  NodeDefinition,
+} from 'cytoscape';
 import fcose from 'cytoscape-fcose';
-import { cyStyles, fcoseLayout, rendererOptions } from '@/lib/cytoscape-config';
+import LoadingSpinner from './LoadingSpinner';
+import {
+  cyStyles,
+  fcoseLayout,
+  largeGraphThreshold,
+  rendererOptions,
+} from '@/lib/cytoscape-config';
 import type { CytoscapeElements } from '@/lib/graphUtils';
 
 type CytoscapeWithExtensions = cytoscapeType & {
   use: (extension: unknown) => void;
+};
+
+type TooltipState = {
+  visible: boolean;
+  x: number;
+  y: number;
+  label: string;
+  family?: string;
+  geneNames?: string;
+  expression?: string[];
+  isQuery?: boolean;
 };
 
 const isEdgeElement = (element: ElementDefinition): element is EdgeDefinition => {
@@ -31,6 +54,7 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscapeType.Core | null>(null);
   const [ready, setReady] = useState(false);
+  const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, x: 0, y: 0, label: '' });
 
   const ensureQueryPriority = useCallback(() => {
     const cy = cyRef.current;
@@ -42,6 +66,9 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
       queryNodes.connectedEdges().style({ 'z-index': 900 });
     });
   }, []);
+
+  const edgeCount = useMemo(() => elements.filter(isEdgeElement).length, [elements]);
+  const largeGraph = edgeCount > largeGraphThreshold;
 
   useEffect(() => {
     (async () => {
@@ -66,6 +93,8 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
           minZoom: 0.05,
           maxZoom: 6,
           renderer: rendererOptions,
+          motionBlur: true,
+          motionBlurOpacity: 0.2,
         });
         const handleTapNode = (event: EventObject) => {
           const node = event.target;
@@ -101,6 +130,10 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
     };
   }, [onError]);
 
+  const hideTooltip = useCallback(() => {
+    setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+  }, []);
+
   // apply elements and run layout (progressive: nodes + seed edges first)
   useEffect(() => {
     if (!ready || !cyRef.current) return;
@@ -108,7 +141,7 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
     const nodeElements = elements.filter(isNodeElement);
     const edgeElements = elements.filter(isEdgeElement);
 
-    const seedEdges = 20000; // quick initial layout
+    const seedEdges = largeGraph ? 12000 : 20000; // quick initial layout
     cy.startBatch();
     cy.elements().remove();
     cy.add(nodeElements);
@@ -116,6 +149,7 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
     cy.endBatch();
     ensureQueryPriority();
     cy.resize();
+    hideTooltip();
 
     try {
       const layoutInstance = cy.layout(layout);
@@ -132,7 +166,7 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
 
     // batch in remaining edges without relayout
     let added = Math.min(seedEdges, edgeElements.length);
-    const batchSize = 10000;
+    const batchSize = largeGraph ? 5000 : 10000;
     function addMore() {
       if (!cyRef.current) return;
       if (added >= edgeElements.length) return;
@@ -143,41 +177,123 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
       if (added < edgeElements.length) setTimeout(addMore, 0);
     }
     setTimeout(addMore, 0);
-  }, [elements, ready, layout, ensureQueryPriority]);
+  }, [elements, ready, layout, ensureQueryPriority, hideTooltip, largeGraph]);
 
   useEffect(() => {
     if (!ready || !cyRef.current) return;
     const handleResize = () => {
       cyRef.current?.resize();
+      hideTooltip();
     };
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [ready]);
+  }, [hideTooltip, ready]);
+
+  useEffect(() => {
+    if (!ready || !cyRef.current) return;
+    const cy = cyRef.current;
+
+    const handleNodeOver = (event: EventObject) => {
+      const node = event.target;
+      if (!node?.isNode?.()) return;
+      const rendered = node.renderedPosition();
+      const data = node.data() as NodeDefinition['data'] & {
+        geneNames?: string;
+        expressionTissue?: string[];
+      };
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const padding = 16;
+      const tooltipWidth = 240;
+      const tooltipHeight = 120;
+      const clampedX = Math.min(Math.max(rendered.x + padding, padding), Math.max(padding, rect.width - tooltipWidth));
+      const clampedY = Math.min(Math.max(rendered.y - padding, padding), Math.max(padding, rect.height - tooltipHeight));
+
+      setTooltip({
+        visible: true,
+        x: clampedX,
+        y: clampedY,
+        label: (data.label as string) || (data.id as string) || 'Protein',
+        family: (data.family as string) || undefined,
+        geneNames: (data.geneNames as string) || undefined,
+        expression: Array.isArray(data.expressionTissue) ? data.expressionTissue : undefined,
+        isQuery: Boolean(data.isQuery),
+      });
+    };
+
+    const handleNodeOut = () => {
+      hideTooltip();
+    };
+
+    const handleViewportChange = () => {
+      hideTooltip();
+    };
+
+    cy.on('mouseover', 'node', handleNodeOver);
+    cy.on('mouseout', 'node', handleNodeOut);
+    cy.on('drag', 'node', handleNodeOut);
+    cy.on('viewport', handleViewportChange);
+
+    return () => {
+      cy.off('mouseover', 'node', handleNodeOver);
+      cy.off('mouseout', 'node', handleNodeOut);
+      cy.off('drag', 'node', handleNodeOut);
+      cy.off('viewport', handleViewportChange);
+    };
+  }, [hideTooltip, ready]);
 
   return (
-    <div className="relative w-full h-full bg-white rounded-lg" aria-label="Network graph">
+    <div className="relative h-full w-full rounded-lg bg-white" aria-label="Network graph">
       {isLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="bg-white/80 rounded-lg border border-gray-200 p-6 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-700 mb-2">Loading network data...</p>
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="rounded-lg border border-gray-200 bg-white/90 p-6 text-center shadow-sm">
+            <LoadingSpinner label="Loading network data..." />
             {progress && (
-              <div className="w-64">
-                <div className="w-full bg-gray-200 rounded h-2 overflow-hidden mb-2">
+              <div className="mt-4 w-64 text-left">
+                <div className="mb-2 h-2 w-full overflow-hidden rounded bg-gray-200">
                   <div
                     className="h-2 bg-blue-600"
                     style={{ width: `${Math.min(100, Math.round((progress.edgesLoaded / Math.max(1, progress.edgesTotal)) * 100))}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-600">Nodes: {progress.nodesLoaded ? '✓' : 'loading'} | Edges: {progress.edgesLoaded.toLocaleString()} / {progress.edgesTotal.toLocaleString()}</p>
+                <p className="text-xs text-gray-600">
+                  Nodes: {progress.nodesLoaded ? '✓' : 'loading'} | Edges: {progress.edgesLoaded.toLocaleString()} / {progress.edgesTotal.toLocaleString()}
+                </p>
               </div>
             )}
           </div>
         </div>
       )}
-      <div ref={containerRef} className="w-full h-full" data-testid="network-graph" />
+      <div ref={containerRef} className="h-full w-full" data-testid="network-graph" />
+      {tooltip.visible && (
+        <div
+          className={`pointer-events-none absolute z-20 max-w-xs rounded-md border border-gray-200 bg-white/95 p-3 text-left shadow-lg transition ${
+            tooltip.isQuery ? 'ring-2 ring-blue-200' : ''
+          }`}
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          <p className="text-sm font-semibold text-gray-900">{tooltip.label}</p>
+          {tooltip.geneNames && (
+            <p className="mt-1 text-xs text-gray-600">
+              <span className="font-medium text-gray-700">Genes:</span> {tooltip.geneNames}
+            </p>
+          )}
+          {tooltip.family && (
+            <p className="mt-1 text-xs text-gray-600">
+              <span className="font-medium text-gray-700">Family:</span> {tooltip.family}
+            </p>
+          )}
+          {tooltip.expression && tooltip.expression.length > 0 && (
+            <p className="mt-1 text-xs text-gray-500">
+              <span className="font-medium text-gray-700">Expression:</span> {tooltip.expression.slice(0, 3).join(', ')}
+              {tooltip.expression.length > 3 ? '…' : ''}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

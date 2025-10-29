@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import Legend from '@/components/Legend';
 import NetworkGraph from '@/components/NetworkGraph';
 import SearchBar from '@/components/SearchBar';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import type { NetworkData, NetworkMeta, NetworkStats } from '@/lib/types';
 import type { CytoscapeElements } from '@/lib/graphUtils';
 import { toCytoscapeElements } from '@/lib/graphUtils';
@@ -105,13 +106,8 @@ export default function Home() {
       <Header />
       <div className="flex flex-col lg:flex-row">
         {loading ? (
-          <div className="w-full lg:w-80 bg-white border-r border-gray-200 p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-            </div>
+          <div className="w-full lg:w-80 bg-white border-r border-gray-200 p-6 flex items-center justify-center">
+            <LoadingSpinner label="Loading network statistics..." />
           </div>
         ) : error ? (
           <div className="w-full lg:w-80 bg-white border-r border-gray-200 p-6">

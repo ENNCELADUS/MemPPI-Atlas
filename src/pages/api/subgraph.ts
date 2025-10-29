@@ -254,7 +254,7 @@ export default async function handler(
     const edgesResp = edges.map(transformEdgeToResponse);
 
     // Build response with truncation metadata
-    const response: any = {
+    const response: SubgraphData = {
       query: queryProteins,
       nodes,
       edges: edgesResp,

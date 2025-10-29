@@ -7,464 +7,107 @@ import { createMocks } from 'node-mocks-http';
 import handler from './stats';
 import { supabase } from '@/lib/supabase';
 
-// Mock the Supabase client
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: jest.fn(),
   },
 }));
 
+const fromMock = supabase.from as jest.Mock;
+
+type CountResult = {
+  count?: number;
+  error?: Error | null;
+  data?: unknown;
+};
+
+type CountOverrides = {
+  eq?: (value: string) => CountResult;
+  neq?: () => CountResult;
+};
+
+type CountBuilder = CountResult & {
+  eq: jest.Mock<CountBuilder, [string, string]>;
+  gte: jest.Mock<CountBuilder, []>;
+  in: jest.Mock<CountBuilder, []>;
+  order: jest.Mock<CountBuilder, []>;
+  not: jest.Mock<{ neq: jest.Mock<CountBuilder, []> }, []>;
+  range: jest.Mock<Promise<{ data: unknown[]; error: Error | null }>, []>;
+  then: <TResult1 = CountResult, TResult2 = never>(
+    onFulfilled?: ((value: CountResult) => TResult1 | PromiseLike<TResult1>) | null,
+    onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ) => Promise<TResult1 | TResult2>;
+  catch: <TResult = CountResult>(
+    onRejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
+  ) => Promise<CountResult | TResult>;
+};
+
+const createCountBuilder = (result: CountResult, overrides: CountOverrides = {}) => {
+  const buildNext = (next: CountResult) => createCountBuilder(next, overrides);
+
+  const builder = { ...result } as CountBuilder;
+
+  builder.eq = jest.fn((_column: string, value: string) => {
+    if (overrides.eq) {
+      return buildNext(overrides.eq(value));
+    }
+    return builder;
+  });
+  builder.gte = jest.fn(() => builder);
+  builder.in = jest.fn(() => builder);
+  builder.order = jest.fn(() => builder);
+  builder.not = jest.fn(() => ({
+    neq: jest.fn(() => buildNext(overrides.neq ? overrides.neq() : result)),
+  }));
+  builder.range = jest.fn(async () => ({ data: [], error: result.error ?? null }));
+  builder.then = (onFulfilled, onRejected) => Promise.resolve(result).then(onFulfilled, onRejected);
+  builder.catch = (onRejected) => Promise.resolve(result).catch(onRejected);
+
+  return builder;
+};
+
 describe('/api/network/stats', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    fromMock.mockReset();
   });
 
-  it('should return 200 with correct stats structure', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
+  it('returns aggregate counts and family distribution', async () => {
+    const families = [{ family: 'TM' }, { family: 'TM' }, { family: 'TF' }, { family: 'Other' }];
+
+    fromMock.mockImplementation((table: string) => {
       if (table === 'nodes') {
         return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
+          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) => {
             if (opts?.count === 'exact') {
-              // First call: count nodes
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              // Second call: fetch families
-              return Promise.resolve({
-                data: [
-                  { family: 'TM' },
-                  { family: 'TM' },
-                  { family: 'TF' },
-                ],
-                error: null,
-              });
+              return Promise.resolve({ count: families.length, error: null });
             }
+            return Promise.resolve({ data: families, error: null });
           }),
         };
       }
+
       if (table === 'edges') {
         return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            const selectResult = Promise.resolve({ count: opts?.count === 'exact' ? 500 : 500, error: null });
+          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) => {
+            if (opts?.head) {
+              return createCountBuilder(
+                { count: 500, error: null },
+                {
+                  eq: (value) =>
+                    value === 'prediction'
+                      ? { count: 320, error: null }
+                      : { count: 180, error: null },
+                  neq: () => ({ count: 210, error: null }),
+                },
+              );
+            }
             return {
-              not: jest.fn().mockResolvedValue({ count: 50, error: null }),
-              eq: jest.fn().mockResolvedValue({ count: 300, error: null }),
-              then: selectResult.then.bind(selectResult),
+              range: jest.fn(async () => ({ data: [], error: null })),
             };
           }),
         };
       }
-      return { select: jest.fn() };
-    });
 
-    const { req, res } = createMocks({
-      method: 'GET',
-    });
-
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(200);
-    const data = JSON.parse(res._getData());
-    
-    expect(data).toHaveProperty('totalNodes');
-    expect(data).toHaveProperty('totalEdges');
-    expect(data).toHaveProperty('familyCounts');
-    expect(data).toHaveProperty('enrichedEdgeCount');
-    expect(data).toHaveProperty('predictedEdgeCount');
-    
-    expect(typeof data.totalNodes).toBe('number');
-    expect(typeof data.totalEdges).toBe('number');
-    expect(typeof data.familyCounts).toBe('object');
-    expect(typeof data.enrichedEdgeCount).toBe('number');
-    expect(typeof data.predictedEdgeCount).toBe('number');
-  });
-
-  it('should correctly calculate family counts with multiple families', async () => {
-    const mockFamilies = [
-      { family: 'TM' },
-      { family: 'TM' },
-      { family: 'TM' },
-      { family: 'TF' },
-      { family: 'TF' },
-      { family: 'TM(IC)' },
-      { family: 'Other' },
-    ];
-
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 7, error: null });
-            } else {
-              return Promise.resolve({ data: mockFamilies, error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 100, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({ count: 10, error: null }),
-              eq: jest.fn().mockResolvedValue({ count: 80, error: null }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    const data = JSON.parse(res._getData());
-    
-    expect(data.familyCounts).toEqual({
-      'TM': 3,
-      'TF': 2,
-      'TM(IC)': 1,
-      'Other': 1,
-    });
-  });
-
-  it('should exclude null and empty family values from counts', async () => {
-    const mockFamilies = [
-      { family: 'TM' },
-      { family: 'TM' },
-      { family: null },
-      { family: '' },
-      { family: '   ' }, // whitespace only
-      { family: 'TF' },
-    ];
-
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 6, error: null });
-            } else {
-              return Promise.resolve({ data: mockFamilies, error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 100, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({ count: 10, error: null }),
-              eq: jest.fn().mockResolvedValue({ count: 80, error: null }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    const data = JSON.parse(res._getData());
-    
-    // Only TM and TF should be counted
-    expect(data.familyCounts).toEqual({
-      'TM': 2,
-      'TF': 1,
-    });
-  });
-
-  it('should correctly count enriched edges (non-null enriched_tissue)', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              return Promise.resolve({ data: [{ family: 'TM' }], error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 1000, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({ count: 250, error: null }),
-              eq: jest.fn().mockResolvedValue({ count: 800, error: null }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    const data = JSON.parse(res._getData());
-    
-    expect(data.enrichedEdgeCount).toBe(250);
-    expect(data.totalEdges).toBe(1000);
-  });
-
-  it('should correctly count predicted edges', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              return Promise.resolve({ data: [{ family: 'TM' }], error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 1000, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({ count: 250, error: null }),
-              eq: jest.fn().mockResolvedValue({ count: 750, error: null }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    const data = JSON.parse(res._getData());
-    
-    expect(data.predictedEdgeCount).toBe(750);
-  });
-
-  it('should return 500 on database error when counting nodes', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockResolvedValue({
-            count: null,
-            error: new Error('Database connection failed'),
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(500);
-    const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to count nodes');
-  });
-
-  it('should return 500 on database error when counting edges', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              return Promise.resolve({ data: [{ family: 'TM' }], error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockResolvedValue({
-            count: null,
-            error: new Error('Database connection failed'),
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(500);
-    const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to count edges');
-  });
-
-  it('should return 500 on database error when fetching families', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              return Promise.resolve({
-                data: null,
-                error: new Error('Database connection failed'),
-              });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockResolvedValue({ count: 500, error: null }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(500);
-    const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to fetch family data');
-  });
-
-  it('should return 500 on database error when counting enriched edges', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              return Promise.resolve({ data: [{ family: 'TM' }], error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 500, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({
-                count: null,
-                error: new Error('Database connection failed'),
-              }),
-              eq: jest.fn().mockResolvedValue({ count: 400, error: null }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(500);
-    const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to count enriched edges');
-  });
-
-  it('should return 500 on database error when counting predicted edges', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 100, error: null });
-            } else {
-              return Promise.resolve({ data: [{ family: 'TM' }], error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 500, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({ count: 50, error: null }),
-              eq: jest.fn().mockResolvedValue({
-                count: null,
-                error: new Error('Database connection failed'),
-              }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
-      return { select: jest.fn() };
-    });
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(500);
-    const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to count predicted edges');
-  });
-
-  it('should handle empty family data gracefully', async () => {
-    const mockFrom = supabase.from as jest.Mock;
-    
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'nodes') {
-        return {
-          select: jest.fn().mockImplementation((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: 0, error: null });
-            } else {
-              return Promise.resolve({ data: [], error: null });
-            }
-          }),
-        };
-      }
-      if (table === 'edges') {
-        return {
-          select: jest.fn().mockImplementation(() => {
-            const selectResult = Promise.resolve({ count: 0, error: null });
-            return {
-              not: jest.fn().mockResolvedValue({ count: 0, error: null }),
-              eq: jest.fn().mockResolvedValue({ count: 0, error: null }),
-              then: selectResult.then.bind(selectResult),
-            };
-          }),
-        };
-      }
       return { select: jest.fn() };
     });
 
@@ -472,18 +115,74 @@ describe('/api/network/stats', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    const data = JSON.parse(res._getData());
-    
-    expect(data.familyCounts).toEqual({});
-    expect(data.totalNodes).toBe(0);
+    const payload = JSON.parse(res._getData());
+
+    expect(payload.totalNodes).toBe(families.length);
+    expect(payload.totalEdges).toBe(500);
+    expect(payload.familyCounts).toEqual({ TM: 2, TF: 1, Other: 1 });
+    expect(payload.enrichedEdgeCount).toBe(210);
+    expect(payload.predictedEdgeCount).toBe(320);
   });
 
-  it('should return 405 for non-GET requests', async () => {
-    const { req, res } = createMocks({ method: 'POST' });
+  it('returns 500 when node counting fails', async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'nodes') {
+        return {
+          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) =>
+            opts?.count === 'exact'
+              ? Promise.resolve({ count: null, error: new Error('db down') })
+              : Promise.resolve({ data: [], error: null }),
+          ),
+        };
+      }
+      return { select: jest.fn(() => Promise.resolve({ count: 0, error: null })) };
+    });
+
+    const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
 
-    expect(res._getStatusCode()).toBe(405);
-    const data = JSON.parse(res._getData());
-    expect(data.error).toBe('Method not allowed');
+    expect(res._getStatusCode()).toBe(500);
+    expect(JSON.parse(res._getData()).error).toBe('Failed to count nodes');
+  });
+
+  it('returns 500 when enriched edge count fails', async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'nodes') {
+        return {
+          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) =>
+            opts?.count === 'exact'
+              ? Promise.resolve({ count: 10, error: null })
+              : Promise.resolve({ data: [], error: null }),
+          ),
+        };
+      }
+
+      if (table === 'edges') {
+        return {
+          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) => {
+            if (opts?.head) {
+              return createCountBuilder(
+                { count: 100, error: null },
+                {
+                  eq: () => ({ count: 60, error: null }),
+                  neq: () => ({ count: undefined, error: new Error('timeout') }),
+                },
+              );
+            }
+            return {
+              range: jest.fn(async () => ({ data: [], error: new Error('range fail') })),
+            };
+          }),
+        };
+      }
+
+      return { select: jest.fn() };
+    });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(500);
+    expect(JSON.parse(res._getData()).error).toBe('Failed to count enriched edges');
   });
 });

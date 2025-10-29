@@ -5,6 +5,7 @@ import Legend from '@/components/Legend';
 import NetworkGraph from '@/components/NetworkGraph';
 import SearchBar from '@/components/SearchBar';
 import DataTable from '@/components/DataTable';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import type { SubgraphData } from '@/lib/types';
 import type { CytoscapeElements } from '@/lib/graphUtils';
 import { toCytoscapeElements } from '@/lib/graphUtils';
@@ -192,10 +193,7 @@ export default function SubgraphPage() {
       <main className="p-6">
         {loading && (
           <div className="flex min-h-[calc(100vh-200px)] items-center justify-center rounded-lg bg-white">
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
-              <p className="text-lg text-gray-600">Loading subnetwork...</p>
-            </div>
+            <LoadingSpinner label="Loading subnetwork..." size="lg" />
           </div>
         )}
 

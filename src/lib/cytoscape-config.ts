@@ -107,6 +107,12 @@ export const coseLayout: cytoscape.LayoutOptions = {
   randomize: false,
 };
 
+const defaultPixelRatio = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+
 export const rendererOptions: cytoscape.CytoscapeOptions['renderer'] = {
   name: 'canvas',
+  pixelRatio: defaultPixelRatio,
+  showFps: false,
 };
+
+export const largeGraphThreshold = 75000;

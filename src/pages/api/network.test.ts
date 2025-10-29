@@ -345,7 +345,7 @@ describe('/api/network', () => {
         fusion_pred_prob: 0.95,
         enriched_tissue: 'Brain',
         tissue_enriched_confidence: 'high confidence',
-        positive_type: 'prediction',
+        positive_type: 'experiment',
       },
     ];
 
@@ -356,8 +356,8 @@ describe('/api/network', () => {
       },
       edges: {
         totalCount: 100,
-        predictionEdges: mockEdges,
-        predictionCount: mockEdges.length,
+        experimentalEdges: mockEdges,
+        experimentalCount: mockEdges.length,
       },
     });
 
@@ -401,7 +401,7 @@ describe('/api/network', () => {
         fusion_pred_prob: 0.85,
         enriched_tissue: 'Brain',
         tissue_enriched_confidence: 'high confidence',
-        positive_type: 'prediction',
+        positive_type: 'experiment',
       },
     ];
 
@@ -410,7 +410,7 @@ describe('/api/network', () => {
         data: mockNodes,
       },
       edges: {
-        predictionEdges: mockEdges,
+        experimentalEdges: mockEdges,
       },
     });
 
@@ -434,7 +434,7 @@ describe('/api/network', () => {
       fusionPredProb: 0.85,
       enrichedTissue: 'Brain',
       tissueEnrichedConfidence: 'high confidence',
-      positiveType: 'prediction',
+      positiveType: 'experiment',
     });
   });
 
@@ -541,6 +541,8 @@ describe('/api/network', () => {
         data: mockNodes,
       },
       edges: {
+        totalCount: 1,
+        experimentalCount: 1,
         experimentalEdges: null,
         experimentalError: new Error('Database connection failed'),
       },
@@ -552,7 +554,7 @@ describe('/api/network', () => {
     expect(res._getStatusCode()).toBe(500);
     const data = JSON.parse(res._getData());
     expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to fetch edges from database');
+    expect(data.error).toBe('Internal server error');
   });
 
   it('should handle null values in node fields gracefully', async () => {
@@ -747,7 +749,7 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET', query: { format: 'cyto' } });
+    const { req, res } = createMocks({ method: 'GET', query: { format: 'cyto', positiveType: 'prediction' } });
 
     await handler(req, res);
 
@@ -816,7 +818,7 @@ describe('/api/network', () => {
         edge: 'PRED1',
         protein1: 'P00001',
         protein2: 'P00001',
-        fusion_pred_prob: 0.9,
+        fusion_pred_prob: 1,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
         positive_type: 'prediction',
@@ -832,7 +834,7 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET', query: { minProb: '5' } });
+    const { req, res } = createMocks({ method: 'GET', query: { minProb: '5', positiveType: 'prediction' } });
 
     await handler(req, res);
 
