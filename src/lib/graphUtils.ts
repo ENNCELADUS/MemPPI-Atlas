@@ -1,8 +1,12 @@
 // Utilities to convert API responses to Cytoscape element format
 // and provide color mappings consistent with Milestone 6 design.
 
-import type { EdgeDefinition, ElementDefinition, NodeDefinition } from 'cytoscape';
-import { EdgeResponse, NodeResponse } from './types';
+import type {
+  EdgeDefinition,
+  ElementDefinition,
+  NodeDefinition,
+} from "cytoscape";
+import { EdgeResponse, NodeResponse } from "./types";
 
 export type CytoscapeNode = NodeDefinition;
 export type CytoscapeEdge = EdgeDefinition;
@@ -10,11 +14,11 @@ export type CytoscapeElements = ElementDefinition[];
 
 // Cool neutral palette only (no red/green/yellow)
 export const familyColorMap: Record<string, string> = {
-  TM: '#93B4E5',
-  TF: '#A7C5EB',
-  Kinase: '#CBD5E1',
-  Receptor: '#B6C2D9',
-  Other: '#D1D5DB',
+  TM: "#93B4E5",
+  TF: "#A7C5EB",
+  Kinase: "#CBD5E1",
+  Receptor: "#B6C2D9",
+  Other: "#D1D5DB",
 };
 
 export function getFamilyColor(family?: string | null): string {
@@ -24,13 +28,14 @@ export function getFamilyColor(family?: string | null): string {
 
 // Edge color shades (all blue family, translucent-friendly)
 export const edgeColors = {
-  experimental: '#4C6FB9',
-  enriched: '#7DA6E8',
-  predicted: '#C9DBF8',
+  experimental: "#4C6FB9",
+  enriched: "#7DA6E8",
+  predicted: "#C9DBF8",
 };
 
 export function getEdgeColor(edge: EdgeResponse): string {
-  if (edge.positiveType?.toLowerCase() === 'experimental') return edgeColors.experimental;
+  if (edge.positiveType?.toLowerCase() === "experimental")
+    return edgeColors.experimental;
   if (edge.enrichedTissue) return edgeColors.enriched;
   return edgeColors.predicted;
 }
@@ -42,15 +47,15 @@ export function nodesToCy(nodes: NodeResponse[]): CytoscapeNode[] {
       data: {
         id: node.id,
         label: node.label,
-        family: node.family || 'Other',
-        color: isQuery ? '#1E3A8A' : getFamilyColor(node.family),
+        family: node.family || "Other",
+        color: isQuery ? "#1E3A8A" : getFamilyColor(node.family),
         isQuery,
         description: node.description,
         geneNames: node.geneNames,
         expressionTissue: node.expressionTissue,
         tooltip: [node.label, node.geneNames, node.family]
           .filter(Boolean)
-          .join(' · '),
+          .join(" · "),
       },
     };
     return nodeDef;

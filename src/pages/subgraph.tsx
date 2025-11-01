@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/router';
-import Header from '@/components/Header';
-import Legend from '@/components/Legend';
-import NetworkGraph from '@/components/NetworkGraph';
-import SearchBar from '@/components/SearchBar';
-import DataTable from '@/components/DataTable';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import type { SubgraphData } from '@/lib/types';
-import type { CytoscapeElements } from '@/lib/graphUtils';
-import { toCytoscapeElements } from '@/lib/graphUtils';
-import { coseLayout } from '@/lib/cytoscape-config';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import Header from "@/components/Header";
+import Legend from "@/components/Legend";
+import NetworkGraph from "@/components/NetworkGraph";
+import SearchBar from "@/components/SearchBar";
+import DataTable from "@/components/DataTable";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import type { SubgraphData } from "@/lib/types";
+import type { CytoscapeElements } from "@/lib/graphUtils";
+import { toCytoscapeElements } from "@/lib/graphUtils";
+import { coseLayout } from "@/lib/cytoscape-config";
 
 export default function SubgraphPage() {
   const router = useRouter();
   const { proteins } = router.query;
-  
+
   const [data, setData] = useState<SubgraphData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,38 +22,47 @@ export default function SubgraphPage() {
   const [graphError, setGraphError] = useState<string | null>(null);
 
   const handleGraphError = useCallback((err: unknown) => {
-    const message = err instanceof Error ? err.message : 'Failed to initialise subgraph viewer';
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Failed to initialise subgraph viewer";
     setGraphError(message);
-    console.error('Error initialising Cytoscape:', err);
+    console.error("Error initialising Cytoscape:", err);
   }, []);
 
   const handleBackToNetwork = () => {
-    router.push('/');
+    router.push("/");
   };
 
   // Column definitions for data tables
-  const nodeColumns = useMemo(() => [
-    { key: 'id', label: 'Protein' },
-    { key: 'label', label: 'Entry Name' },
-    { key: 'description', label: 'Description' },
-    { key: 'geneNames', label: 'Gene Names' },
-    { key: 'family', label: 'Family' },
-    { key: 'expressionTissue', label: 'Expression Tissue' },
-  ], []);
+  const nodeColumns = useMemo(
+    () => [
+      { key: "id", label: "Protein" },
+      { key: "label", label: "Entry Name" },
+      { key: "description", label: "Description" },
+      { key: "geneNames", label: "Gene Names" },
+      { key: "family", label: "Family" },
+      { key: "expressionTissue", label: "Expression Tissue" },
+    ],
+    []
+  );
 
-  const edgeColumns = useMemo(() => [
-    { key: 'id', label: 'Edge' },
-    { key: 'source', label: 'Protein 1' },
-    { key: 'target', label: 'Protein 2' },
-    { key: 'fusionPredProb', label: 'Fusion Pred. Prob' },
-    { key: 'enrichedTissue', label: 'Enriched Tissue' },
-    { key: 'positiveType', label: 'Positive Type' },
-  ], []);
+  const edgeColumns = useMemo(
+    () => [
+      { key: "id", label: "Edge" },
+      { key: "source", label: "Protein 1" },
+      { key: "target", label: "Protein 2" },
+      { key: "fusionPredProb", label: "Fusion Pred. Prob" },
+      { key: "enrichedTissue", label: "Enriched Tissue" },
+      { key: "positiveType", label: "Positive Type" },
+    ],
+    []
+  );
 
   // Format and sort node data for display
   const formattedNodes = useMemo(() => {
     if (!data) return [];
-    
+
     // Sort: queried nodes first, then alphabetically by id
     const sorted = [...data.nodes].sort((a, b) => {
       if (a.isQuery && !b.isQuery) return -1;
@@ -67,29 +76,31 @@ export default function SubgraphPage() {
       description: node.description,
       geneNames: node.geneNames,
       family: node.family,
-      expressionTissue: node.expressionTissue.join(', '),
+      expressionTissue: node.expressionTissue.join(", "),
     }));
   }, [data]);
 
   // Format and sort edge data for display
   const formattedEdges = useMemo(() => {
     if (!data) return [];
-    
+
     // Sort by fusionPredProb descending
-    const sorted = [...data.edges].sort((a, b) => b.fusionPredProb - a.fusionPredProb);
+    const sorted = [...data.edges].sort(
+      (a, b) => b.fusionPredProb - a.fusionPredProb
+    );
 
     return sorted.map((edge) => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
       fusionPredProb: edge.fusionPredProb.toFixed(3),
-      enrichedTissue: edge.enrichedTissue ?? '',
+      enrichedTissue: edge.enrichedTissue ?? "",
       positiveType: edge.positiveType,
     }));
   }, [data]);
 
   useEffect(() => {
-    if (!proteins || typeof proteins !== 'string') {
+    if (!proteins || typeof proteins !== "string") {
       setLoading(false);
       return;
     }
@@ -101,16 +112,20 @@ export default function SubgraphPage() {
 
       try {
         const proteinParam = Array.isArray(proteins) ? proteins[0] : proteins;
-        const response = await fetch(`/api/subgraph?proteins=${encodeURIComponent(proteinParam)}`);
-        
+        const response = await fetch(
+          `/api/subgraph?proteins=${encodeURIComponent(proteinParam)}`
+        );
+
         if (response.status === 404) {
-          setError('Protein(s) not found in database. Please check the protein IDs and try again.');
+          setError(
+            "Protein(s) not found in database. Please check the protein IDs and try again."
+          );
           setLoading(false);
           return;
         }
 
         if (response.status === 400) {
-          setError('Invalid request. Please provide valid protein IDs.');
+          setError("Invalid request. Please provide valid protein IDs.");
           setLoading(false);
           return;
         }
@@ -129,9 +144,10 @@ export default function SubgraphPage() {
         });
         setGraphElements(elements);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch subgraph data';
+        const message =
+          err instanceof Error ? err.message : "Failed to fetch subgraph data";
         setError(message);
-        console.error('Error fetching subgraph:', err);
+        console.error("Error fetching subgraph:", err);
       } finally {
         setLoading(false);
       }
@@ -147,9 +163,12 @@ export default function SubgraphPage() {
         <Header />
         <div className="flex items-center justify-center p-8">
           <div className="max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow">
-            <p className="text-sm font-semibold text-red-600">Missing Parameter</p>
+            <p className="text-sm font-semibold text-red-600">
+              Missing Parameter
+            </p>
             <p className="mt-2 text-xs text-red-500">
-              Please provide protein IDs via the <code>proteins</code> query parameter.
+              Please provide protein IDs via the <code>proteins</code> query
+              parameter.
             </p>
             <button
               onClick={handleBackToNetwork}
@@ -166,7 +185,7 @@ export default function SubgraphPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       {/* Back button */}
       <div className="border-b border-gray-200 bg-white px-6 py-3">
         <button
@@ -200,7 +219,9 @@ export default function SubgraphPage() {
         {!loading && error && (
           <div className="flex min-h-[calc(100vh-200px)] items-center justify-center rounded-lg bg-white">
             <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center shadow">
-              <p className="text-sm font-semibold text-red-600">Error Loading Subgraph</p>
+              <p className="text-sm font-semibold text-red-600">
+                Error Loading Subgraph
+              </p>
               <p className="mt-2 text-xs text-red-500">{error}</p>
               <button
                 onClick={handleBackToNetwork}
@@ -219,13 +240,17 @@ export default function SubgraphPage() {
               {data && (
                 <div className="mb-4">
                   <h1 className="text-2xl font-semibold text-gray-900">
-                    Subgraph for: {data.query.join(', ')}
+                    Subgraph for: {data.query.join(", ")}
                   </h1>
                   <p className="mt-1 text-sm text-gray-600">
-                    {data.nodes.length} node{data.nodes.length !== 1 ? 's' : ''}, {data.edges.length} edge{data.edges.length !== 1 ? 's' : ''}
+                    {data.nodes.length} node{data.nodes.length !== 1 ? "s" : ""}
+                    , {data.edges.length} edge
+                    {data.edges.length !== 1 ? "s" : ""}
                   </p>
                   <div className="mt-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Searched Proteins</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Searched Proteins
+                    </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {data.query.map((protein) => (
                         <span
@@ -241,33 +266,36 @@ export default function SubgraphPage() {
               )}
 
               {/* Truncation warning */}
-              {data?.truncated && (data.truncated.nodes || data.truncated.edges) && (
-                <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                  <div className="flex items-start">
-                    <svg
-                      className="mt-0.5 h-5 w-5 text-yellow-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-yellow-800">
-                        Results truncated
-                      </p>
-                      <p className="mt-1 text-xs text-yellow-700">
-                        The subgraph has been limited due to size constraints.
-                        {data.truncated.nodes && ' Some nodes have been excluded.'}
-                        {data.truncated.edges && ' Some edges have been excluded.'}
-                      </p>
+              {data?.truncated &&
+                (data.truncated.nodes || data.truncated.edges) && (
+                  <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                    <div className="flex items-start">
+                      <svg
+                        className="mt-0.5 h-5 w-5 text-yellow-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <div className="ml-3">
+                        <p className="text-sm font-medium text-yellow-800">
+                          Results truncated
+                        </p>
+                        <p className="mt-1 text-xs text-yellow-700">
+                          The subgraph has been limited due to size constraints.
+                          {data.truncated.nodes &&
+                            " Some nodes have been excluded."}
+                          {data.truncated.edges &&
+                            " Some edges have been excluded."}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Graph visualization */}
               <div className="relative h-[600px] lg:h-[calc(100vh-240px)]">
@@ -283,7 +311,9 @@ export default function SubgraphPage() {
                 {graphError && (
                   <div className="absolute inset-0 z-30 flex items-center justify-center">
                     <div className="max-w-sm rounded-lg border border-red-200 bg-white/90 p-4 text-center shadow">
-                      <p className="text-sm font-semibold text-red-600">Unable to load subgraph</p>
+                      <p className="text-sm font-semibold text-red-600">
+                        Unable to load subgraph
+                      </p>
                       <p className="mt-2 text-xs text-red-500">{graphError}</p>
                     </div>
                   </div>
@@ -311,4 +341,3 @@ export default function SubgraphPage() {
     </div>
   );
 }
-

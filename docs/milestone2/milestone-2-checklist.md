@@ -15,30 +15,36 @@
 Follow the guide at `/docs/supabase-setup-guide.md`:
 
 ### Step 1: Create Supabase Project
+
 - [ ] Sign up/log in to https://supabase.com
 - [ ] Create new project named `memppi-atlas`
 - [ ] Save database password securely
 - [ ] Note Project URL and anon key
 
 ### Step 2: Create Database Tables
+
 - [ ] Open Supabase SQL Editor
 - [ ] Run `/sql/01_create_tables.sql`
 - [ ] Verify tables appear in Table Editor
 
 ### Step 3: Import CSV Data
+
 - [ ] Import `/data/node_info_with_exp.csv` → `nodes` table (4,445 rows)
 - [ ] Import `/data/edge_info_with_exp.csv` → `edges` table (1,085,072 rows)
 - [ ] Verify row counts match expected values
 
 ### Step 4: Enable Row Level Security
+
 - [ ] Run `/sql/03_enable_rls.sql`
 - [ ] Verify RLS is enabled on both tables
 
 ### Step 5: Configure Local Environment
+
 - [ ] Copy `.env.local.example` → `.env.local`
 - [ ] Add your Supabase URL and anon key to `.env.local`
 
 ### Step 6: Test Database Connection
+
 - [ ] Start dev server: `npm run dev`
 - [ ] Visit http://localhost:3000/api/test-db
 - [ ] Verify success response with correct row counts
@@ -87,7 +93,7 @@ SELECT * FROM nodes LIMIT 5;
 SELECT * FROM edges LIMIT 5;
 
 -- Check for data integrity
-SELECT COUNT(*) FROM edges e 
+SELECT COUNT(*) FROM edges e
 WHERE NOT EXISTS (SELECT 1 FROM nodes n WHERE n.protein = e.protein1);
 -- Expected: 0 (no orphaned edges)
 ```
@@ -99,7 +105,7 @@ See "Troubleshooting" section in `/docs/supabase-setup-guide.md`
 ## Time Estimate
 
 - Supabase project creation: 5 minutes
-- Table creation: 2 minutes  
+- Table creation: 2 minutes
 - Data import: 10-15 minutes (edges file is large)
 - RLS setup: 2 minutes
 - Local configuration: 3 minutes
@@ -110,7 +116,7 @@ See "Troubleshooting" section in `/docs/supabase-setup-guide.md`
 ## Next Steps (Milestone 3)
 
 Once Milestone 2 is verified complete:
+
 - Create `/pages/api/network.ts` endpoint
 - Implement data transformation utilities
 - Test full network data fetch
-

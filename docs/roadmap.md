@@ -9,6 +9,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Set up Next.js project with Tailwind CSS and TypeScript.
 
 **Tasks:**
+
 - Initialize Next.js 14 project with TypeScript
 - Configure Tailwind CSS with custom color palette
 - Set up ESLint and Prettier
@@ -17,6 +18,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Create basic `Header` component with logo and title
 
 **Acceptance Criteria:**
+
 - ✅ `npm run dev` starts development server
 - ✅ Homepage renders with Header component
 - ✅ Tailwind classes work correctly
@@ -31,6 +33,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Create Supabase project and import CSV data into PostgreSQL tables.
 
 **Tasks:**
+
 - Create Supabase project via dashboard
 - Write SQL scripts to create `nodes` and `edges` tables with indexes
 - Import `node_info_with_exp.csv` into `nodes` table
@@ -40,6 +43,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Add environment variables to `.env.local`
 
 **Acceptance Criteria:**
+
 - ✅ Both tables exist in Supabase with correct schemas
 - ✅ Row counts match CSV file line counts
 - ✅ Test query from Supabase dashboard returns data
@@ -54,6 +58,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Implement `/api/network` endpoint to fetch all nodes and edges.
 
 **Tasks:**
+
 - Create `/pages/api/network.ts`
 - Query Supabase for all nodes and edges
 - Transform data to consistent JSON format
@@ -61,6 +66,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Write unit tests for the endpoint
 
 **Acceptance Criteria:**
+
 - ✅ `GET /api/network` returns JSON with `nodes` and `edges` arrays
 - ✅ Response includes all required fields per API spec
 - ✅ Returns 500 with error message on database failure
@@ -75,6 +81,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Implement `/api/network/stats` endpoint for sidebar metrics.
 
 **Tasks:**
+
 - Create `/pages/api/network/stats.ts`
 - Query Supabase for total node and edge counts
 - Calculate family distribution counts
@@ -83,6 +90,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Write unit tests
 
 **Acceptance Criteria:**
+
 - ✅ `GET /api/network/stats` returns correct counts
 - ✅ `familyCounts` object has counts per family type
 - ✅ `enrichedEdgeCount` excludes NA values
@@ -97,6 +105,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Build Page 1 layout with sidebar displaying network statistics.
 
 **Tasks:**
+
 - Create `Sidebar` component with statistics section
 - Create `StatCard` component for individual metrics
 - Fetch data from `/api/network/stats` on page load
@@ -106,6 +115,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Handle loading and error states
 
 **Acceptance Criteria:**
+
 - ✅ Page 1 renders with sidebar on the left (320px width on desktop)
 - ✅ Statistics display correctly from API data (Total Nodes, Total Edges, Enriched Edges)
 - ✅ Family distribution shows all families with counts, sorted by count
@@ -125,6 +135,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Render the full PPI network on Page 1 using Cytoscape.js.
 
 **Tasks:**
+
 - Install Cytoscape.js and fcose layout extension
 - Create `NetworkGraph` component wrapper
 - Create `/lib/graphUtils.ts` for data transformations
@@ -138,6 +149,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Create `Legend` component and display it
 
 **Acceptance Criteria:**
+
 - ✅ Full network renders in main content area (75% width)
 - ✅ Nodes colored by family (TM=blue, TF=green, etc.)
 - ✅ Edges colored by enrichment (red=enriched, gray=normal)
@@ -146,6 +158,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - ✅ Legend shows family colors correctly
 
 **Notes (Performance and scope):**
+
 - Decision: Use Option A — server-side edge filtering for performance.
   - Goal: Initial render under 10 seconds on typical desktop.
 - Visualization: Dense force-directed “hairball” (fcose) with all nodes shown.
@@ -164,6 +177,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Implement bottom search bar that navigates to subgraph page.
 
 **Tasks:**
+
 - Create `SearchBar` component
 - Position fixed at bottom center of viewport
 - Handle form submission
@@ -173,6 +187,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Add styling with shadow and rounded corners
 
 **Acceptance Criteria:**
+
 - ✅ Search bar visible at bottom of Page 1
 - ✅ Accepts single protein ID (e.g., "P12345")
 - ✅ Accepts multiple IDs (e.g., "P12345,Q67890")
@@ -188,6 +203,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Implement `/api/subgraph` endpoint to fetch query proteins and neighbors.
 
 **Tasks:**
+
 - ✅ Create `/pages/api/subgraph.ts`
 - ✅ Parse `proteins` query parameter (case-insensitive, comma-separated)
 - ✅ Query edges where protein1 OR protein2 matches any query protein
@@ -204,6 +220,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - ✅ Update type definitions (SubgraphData interface)
 
 **Acceptance Criteria:**
+
 - ✅ `GET /api/subgraph?proteins=P12345` returns subgraph
 - ✅ Response includes query protein + all 1-hop neighbors
 - ✅ Queried nodes have `isQuery: true` flag
@@ -223,6 +240,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Create Page 2 with focused subgraph visualization.
 
 **Tasks:**
+
 - Create `/pages/subgraph.tsx`
 - Extract `proteins` from URL query params
 - Fetch data from `/api/subgraph`
@@ -235,6 +253,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Show error message if proteins not found
 
 **Acceptance Criteria:**
+
 - ✅ Page loads from `/subgraph?proteins=P12345`
 - ✅ Subgraph renders with query protein + neighbors
 - ✅ Queried nodes highlighted with red border
@@ -252,6 +271,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Display node and edge information tables below subgraph.
 
 **Tasks:**
+
 - Create `DataTable` component with props for columns and data
 - Define column configs for node table (protein, entry_name, description, gene_names, family, expression_tissue)
 - Define column configs for edge table (edge, protein1, protein2, fusion_pred_prob, enriched_tissue, positive_type)
@@ -262,6 +282,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Add table captions
 
 **Acceptance Criteria:**
+
 - ✅ Node table shows up to 10 rows with correct columns
 - ✅ Edge table shows up to 10 rows with correct columns
 - ✅ Tables have zebra striping (alternating row colors)
@@ -278,6 +299,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Add comprehensive tests and polish UI/UX.
 
 **Tasks:**
+
 - Write unit tests for all utility functions (`graphUtils`, `cytoscape-config`)
 - Write integration tests for all API routes
 - Write component tests for `NetworkGraph`, `SearchBar`, `DataTable`, `Sidebar`, `Legend`
@@ -290,6 +312,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Fix any linter errors or warnings
 
 **Acceptance Criteria:**
+
 - ✅ Test coverage >80% for critical paths
 - ✅ All tests pass (`npm test`)
 - ✅ No ESLint errors or warnings
@@ -307,6 +330,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 **Goal:** Deploy application to production on Vercel.
 
 **Tasks:**
+
 - Create Vercel account and link GitHub repository
 - Configure environment variables in Vercel dashboard
   - `NEXT_PUBLIC_SUPABASE_URL`
@@ -319,6 +343,7 @@ This roadmap breaks down the MemPPI-Atlas implementation into small, incremental
 - Update README with live URL
 
 **Acceptance Criteria:**
+
 - ✅ Application accessible at Vercel URL
 - ✅ Both pages load and function correctly
 - ✅ API endpoints return data

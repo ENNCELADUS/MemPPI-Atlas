@@ -1,13 +1,13 @@
 // API endpoint for network statistics
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { PostgrestError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import { NetworkStats } from '@/lib/types';
+import type { NextApiRequest, NextApiResponse } from "next";
+import type { PostgrestError } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { NetworkStats } from "@/lib/types";
 
 const EDGE_COUNT_BATCH_INITIAL = 50000;
 const EDGE_COUNT_BATCH_MIN = 5000;
 
-type EdgeColumn = 'enriched_tissue' | 'positive_type';
+type EdgeColumn = "enriched_tissue" | "positive_type";
 
 async function countEdgesByScanning(
   column: EdgeColumn,
@@ -20,12 +20,15 @@ async function countEdgesByScanning(
   while (true) {
     const to = offset + batchSize - 1;
     const { data, error } = await supabase
-      .from('edges')
+      .from("edges")
       .select(column)
       .range(offset, to);
 
     if (error) {
-      if ((error as PostgrestError).code === '57014' && batchSize > EDGE_COUNT_BATCH_MIN) {
+      if (
+        (error as PostgrestError).code === "57014" &&
+        batchSize > EDGE_COUNT_BATCH_MIN
+      ) {
         batchSize = Math.max(EDGE_COUNT_BATCH_MIN, Math.floor(batchSize / 2));
         console.warn(
           `Edge scan for column "${column}" timed out at offset ${offset}; retrying with batchSize=${batchSize}`
@@ -57,35 +60,38 @@ async function countEdgesByScanning(
 
 async function countEnrichedEdges(): Promise<number> {
   const query = supabase
-    .from('edges')
-    .select('*', { count: 'exact', head: true })
-    .not('enriched_tissue', 'is', null)
-    .neq('enriched_tissue', 'NA');
+    .from("edges")
+    .select("*", { count: "exact", head: true })
+    .not("enriched_tissue", "is", null)
+    .neq("enriched_tissue", "NA");
 
   const { count, error } = await query;
-  if (!error && typeof count === 'number') {
+  if (!error && typeof count === "number") {
     return count;
   }
 
-  console.warn('Falling back to batch scan for enriched edge count', error);
-  return countEdgesByScanning('enriched_tissue', (value) => !!value && value !== 'NA');
+  console.warn("Falling back to batch scan for enriched edge count", error);
+  return countEdgesByScanning(
+    "enriched_tissue",
+    (value) => !!value && value !== "NA"
+  );
 }
 
 async function countPredictedEdges(): Promise<number> {
   const query = supabase
-    .from('edges')
-    .select('*', { count: 'exact', head: true })
-    .eq('positive_type', 'prediction');
+    .from("edges")
+    .select("*", { count: "exact", head: true })
+    .eq("positive_type", "prediction");
 
   const { count, error } = await query;
-  if (!error && typeof count === 'number') {
+  if (!error && typeof count === "number") {
     return count;
   }
 
-  console.warn('Falling back to batch scan for predicted edge count', error);
+  console.warn("Falling back to batch scan for predicted edge count", error);
   return countEdgesByScanning(
-    'positive_type',
-    (value) => (value || '').toLowerCase() === 'prediction'
+    "positive_type",
+    (value) => (value || "").toLowerCase() === "prediction"
   );
 }
 
@@ -101,46 +107,46 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<NetworkStats | { error: string }>
 ) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     // Count total nodes
     const { count: nodeCount, error: nodeError } = await supabase
-      .from('nodes')
-      .select('*', { count: 'exact', head: true });
+      .from("nodes")
+      .select("*", { count: "exact", head: true });
 
     if (nodeError) {
-      console.error('Database error counting nodes:', nodeError);
-      return res.status(500).json({ error: 'Failed to count nodes' });
+      console.error("Database error counting nodes:", nodeError);
+      return res.status(500).json({ error: "Failed to count nodes" });
     }
 
     // Count total edges
     const { count: edgeCount, error: edgeError } = await supabase
-      .from('edges')
-      .select('*', { count: 'exact', head: true });
+      .from("edges")
+      .select("*", { count: "exact", head: true });
 
     if (edgeError) {
-      console.error('Database error counting edges:', edgeError);
-      return res.status(500).json({ error: 'Failed to count edges' });
+      console.error("Database error counting edges:", edgeError);
+      return res.status(500).json({ error: "Failed to count edges" });
     }
 
     // Fetch all family values for aggregation (only ~2K rows, fetch family column only)
     const { data: familyData, error: familyError } = await supabase
-      .from('nodes')
-      .select('family');
+      .from("nodes")
+      .select("family");
 
     if (familyError) {
-      console.error('Database error fetching families:', familyError);
-      return res.status(500).json({ error: 'Failed to fetch family data' });
+      console.error("Database error fetching families:", familyError);
+      return res.status(500).json({ error: "Failed to fetch family data" });
     }
 
     // Aggregate family counts (exclude null/empty values)
     const familyCounts: Record<string, number> = {};
     familyData?.forEach((node) => {
       const family = node.family;
-      if (family && family.trim() !== '') {
+      if (family && family.trim() !== "") {
         familyCounts[family] = (familyCounts[family] || 0) + 1;
       }
     });
@@ -150,16 +156,16 @@ export default async function handler(
     try {
       enrichedEdgeCount = await countEnrichedEdges();
     } catch (enrichedError) {
-      console.error('Database error counting enriched edges:', enrichedError);
-      return res.status(500).json({ error: 'Failed to count enriched edges' });
+      console.error("Database error counting enriched edges:", enrichedError);
+      return res.status(500).json({ error: "Failed to count enriched edges" });
     }
 
     let predictedEdgeCount = 0;
     try {
       predictedEdgeCount = await countPredictedEdges();
     } catch (predictedError) {
-      console.error('Database error counting predicted edges:', predictedError);
-      return res.status(500).json({ error: 'Failed to count predicted edges' });
+      console.error("Database error counting predicted edges:", predictedError);
+      return res.status(500).json({ error: "Failed to count predicted edges" });
     }
 
     const stats: NetworkStats = {
@@ -172,7 +178,7 @@ export default async function handler(
 
     return res.status(200).json(stats);
   } catch (error) {
-    console.error('Unexpected error in /api/network/stats:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Unexpected error in /api/network/stats:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

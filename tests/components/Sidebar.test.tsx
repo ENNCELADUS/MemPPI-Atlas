@@ -1,6 +1,6 @@
-import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import Sidebar from '@/components/Sidebar';
+import React from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import Sidebar from "@/components/Sidebar";
 
 const stats = {
   totalNodes: 200,
@@ -16,55 +16,71 @@ const meta = {
   filteredEdges: 120,
 };
 
-describe('Sidebar', () => {
-  it('toggles positive type filters and calls onChange', () => {
+describe("Sidebar", () => {
+  it("toggles positive type filters and calls onChange", () => {
     const onChange = jest.fn();
     render(
       <Sidebar
         stats={stats}
         meta={meta}
-        filters={{ positiveTypes: ['experiment'], maxEdges: 50000, onlyVisibleEdges: false }}
+        filters={{
+          positiveTypes: ["experiment"],
+          maxEdges: 50000,
+          onlyVisibleEdges: false,
+        }}
         onChange={onChange}
-      />,
+      />
     );
 
-    fireEvent.click(screen.getByText('Predicted'));
+    fireEvent.click(screen.getByText("Predicted"));
     expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ positiveTypes: expect.arrayContaining(['experiment', 'prediction']) }),
+      expect.objectContaining({
+        positiveTypes: expect.arrayContaining(["experiment", "prediction"]),
+      })
     );
   });
 
-  it('updates maxEdges via slider input', () => {
+  it("updates maxEdges via slider input", () => {
     const onChange = jest.fn();
     render(
       <Sidebar
         stats={stats}
         meta={meta}
-        filters={{ positiveTypes: ['experiment'], maxEdges: 50000, onlyVisibleEdges: false }}
+        filters={{
+          positiveTypes: ["experiment"],
+          maxEdges: 50000,
+          onlyVisibleEdges: false,
+        }}
         onChange={onChange}
-      />,
+      />
     );
 
-    const slider = screen.getByLabelText('Maximum edges') as HTMLInputElement;
-    fireEvent.change(slider, { target: { value: '20000' } });
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ maxEdges: 20000 }));
+    const slider = screen.getByLabelText("Maximum edges") as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: "20000" } });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ maxEdges: 20000 })
+    );
   });
 
-  it('toggles onlyVisibleEdges checkbox', () => {
+  it("toggles onlyVisibleEdges checkbox", () => {
     const onChange = jest.fn();
     render(
       <Sidebar
         stats={stats}
         meta={meta}
-        filters={{ positiveTypes: ['experiment'], maxEdges: 50000, onlyVisibleEdges: false }}
+        filters={{
+          positiveTypes: ["experiment"],
+          maxEdges: 50000,
+          onlyVisibleEdges: false,
+        }}
         onChange={onChange}
-      />,
+      />
     );
 
-    const checkbox = screen.getByLabelText('Only edges among visible nodes');
+    const checkbox = screen.getByLabelText("Only edges among visible nodes");
     fireEvent.click(checkbox);
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ onlyVisibleEdges: true }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ onlyVisibleEdges: true })
+    );
   });
 });
-
-

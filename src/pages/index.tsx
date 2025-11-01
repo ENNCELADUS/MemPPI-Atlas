@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Header from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
-import Legend from '@/components/Legend';
-import NetworkGraph from '@/components/NetworkGraph';
-import SearchBar from '@/components/SearchBar';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import type { NetworkData, NetworkMeta, NetworkStats } from '@/lib/types';
-import type { CytoscapeElements } from '@/lib/graphUtils';
-import { toCytoscapeElements } from '@/lib/graphUtils';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import Legend from "@/components/Legend";
+import NetworkGraph from "@/components/NetworkGraph";
+import SearchBar from "@/components/SearchBar";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import type { NetworkData, NetworkMeta, NetworkStats } from "@/lib/types";
+import type { CytoscapeElements } from "@/lib/graphUtils";
+import { toCytoscapeElements } from "@/lib/graphUtils";
 
 export default function Home() {
   const [stats, setStats] = useState<NetworkStats | null>(null);
@@ -18,7 +18,7 @@ export default function Home() {
   const [graphError, setGraphError] = useState<string | null>(null);
   const [graphMeta, setGraphMeta] = useState<NetworkMeta | null>(null);
   const [filters, setFilters] = useState({
-    positiveTypes: ['experiment'],
+    positiveTypes: ["experiment"],
     maxEdges: 50_000,
     onlyVisibleEdges: false,
   });
@@ -26,31 +26,36 @@ export default function Home() {
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
-    params.set('maxEdges', String(filters.maxEdges));
+    params.set("maxEdges", String(filters.maxEdges));
     if (filters.positiveTypes.length > 0) {
-      params.set('positiveType', filters.positiveTypes.join(','));
+      params.set("positiveType", filters.positiveTypes.join(","));
     }
     return params.toString();
   }, [filters.maxEdges, filters.positiveTypes]);
 
   const handleGraphError = useCallback((err: unknown) => {
-    const message = err instanceof Error ? err.message : 'Failed to initialise network viewer';
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Failed to initialise network viewer";
     setGraphError(message);
-    console.error('Error initialising Cytoscape:', err);
+    console.error("Error initialising Cytoscape:", err);
   }, []);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const response = await fetch('/api/network/stats');
+        const response = await fetch("/api/network/stats");
         if (!response.ok) {
           throw new Error(`Failed to fetch statistics: ${response.statusText}`);
         }
         const data = await response.json();
         setStats(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        console.error('Error fetching network stats:', err);
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
+        console.error("Error fetching network stats:", err);
       } finally {
         setLoading(false);
       }
@@ -61,7 +66,7 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    const cacheKey = queryString || '__default__';
+    const cacheKey = queryString || "__default__";
     async function fetchNetwork() {
       try {
         const cached = networkCacheRef.current.get(cacheKey);
@@ -73,7 +78,9 @@ export default function Home() {
           setGraphLoading(true);
         }
         setGraphError(null);
-        const response = await fetch(`/api/network${queryString ? `?${queryString}` : ''}`);
+        const response = await fetch(
+          `/api/network${queryString ? `?${queryString}` : ""}`
+        );
         if (!response.ok) {
           throw new Error(`Failed to fetch network: ${response.statusText}`);
         }
@@ -85,9 +92,10 @@ export default function Home() {
         setGraphMeta(meta);
       } catch (err) {
         if (cancelled) return;
-        const message = err instanceof Error ? err.message : 'Failed to fetch network';
+        const message =
+          err instanceof Error ? err.message : "Failed to fetch network";
         setGraphError(message);
-        console.error('Error fetching network:', err);
+        console.error("Error fetching network:", err);
       } finally {
         if (!cancelled) {
           setGraphLoading(false);
@@ -111,7 +119,9 @@ export default function Home() {
           </div>
         ) : error ? (
           <div className="w-full lg:w-80 bg-white border-r border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Network Statistics</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Network Statistics
+            </h2>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-sm text-red-800">
                 <span className="font-semibold">Error:</span> {error}
@@ -140,7 +150,9 @@ export default function Home() {
             {graphError && (
               <div className="absolute inset-0 z-30 flex items-center justify-center">
                 <div className="max-w-sm rounded-lg border border-red-200 bg-white/90 p-4 text-center shadow">
-                  <p className="text-sm font-semibold text-red-600">Unable to load network</p>
+                  <p className="text-sm font-semibold text-red-600">
+                    Unable to load network
+                  </p>
                   <p className="mt-2 text-xs text-red-500">{graphError}</p>
                 </div>
               </div>

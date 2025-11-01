@@ -1,13 +1,16 @@
 // API endpoint for fetching subgraph data (query proteins + 1-hop neighbors)
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
-import { Node, Edge, SubgraphData } from '@/lib/types';
-import { transformNodeToResponse, transformEdgeToResponse } from '@/lib/transforms';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { supabase } from "@/lib/supabase";
+import { Node, Edge, SubgraphData } from "@/lib/types";
+import {
+  transformNodeToResponse,
+  transformEdgeToResponse,
+} from "@/lib/transforms";
 
 /**
  * GET /api/subgraph?proteins=P12345,Q67890
  * Returns subgraph containing query proteins and their 1-hop neighbors
- * 
+ *
  * Query Parameters:
  * - proteins (required): Comma-separated list of UniProt accessions
  * - minProb (optional): Minimum fusion prediction probability (default: 0.8)
@@ -19,40 +22,47 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SubgraphData | { error: string }>
 ) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     // Parse and validate proteins parameter
     const proteinsParam = req.query.proteins as string | undefined;
-    if (!proteinsParam || proteinsParam.trim() === '') {
-      return res.status(400).json({ error: 'Missing required parameter: proteins' });
+    if (!proteinsParam || proteinsParam.trim() === "") {
+      return res
+        .status(400)
+        .json({ error: "Missing required parameter: proteins" });
     }
 
     // Parse query proteins (case-insensitive, convert to uppercase)
     const queryProteins = proteinsParam
-      .split(',')
-      .map(p => p.trim().toUpperCase())
-      .filter(p => p.length > 0);
+      .split(",")
+      .map((p) => p.trim().toUpperCase())
+      .filter((p) => p.length > 0);
 
     if (queryProteins.length === 0) {
-      return res.status(400).json({ error: 'Invalid proteins parameter: must contain at least one protein ID' });
+      return res.status(400).json({
+        error:
+          "Invalid proteins parameter: must contain at least one protein ID",
+      });
     }
 
     // Parse filtering parameters (same defaults as network endpoint)
-    const minProb = parseFloat((req.query.minProb as string) || '0.8');
-    const preferExperimental = (req.query.preferExperimental as string) !== 'false';
+    const minProb = parseFloat((req.query.minProb as string) || "0.8");
+    const preferExperimental =
+      (req.query.preferExperimental as string) !== "false";
     const maxEdges = Math.min(
-      parseInt((req.query.maxEdges as string) || '5000', 10),
+      parseInt((req.query.maxEdges as string) || "5000", 10),
       20000 // Hard cap
     );
     const maxNodes = Math.min(
-      parseInt((req.query.maxNodes as string) || '1000', 10),
+      parseInt((req.query.maxNodes as string) || "1000", 10),
       5000 // Hard cap
     );
 
-    const edgeSelect = 'edge,protein1,protein2,fusion_pred_prob,enriched_tissue,tissue_enriched_confidence,positive_type';
+    const edgeSelect =
+      "edge,protein1,protein2,fusion_pred_prob,enriched_tissue,tissue_enriched_confidence,positive_type";
 
     // Step 1: Query edges where protein1 OR protein2 matches any query protein
     let edges: Edge[] = [];
@@ -63,17 +73,21 @@ export default async function handler(
     if (preferExperimental) {
       // First, get experimental edges
       const { data: expEdges, error: expErr } = await supabase
-        .from('edges')
+        .from("edges")
         .select(edgeSelect)
-        .eq('positive_type', 'experimental')
+        .eq("positive_type", "experimental")
         .or(
-          queryProteins.map(p => `protein1.eq.${p},protein2.eq.${p}`).join(',')
+          queryProteins
+            .map((p) => `protein1.eq.${p},protein2.eq.${p}`)
+            .join(",")
         )
         .limit(maxEdges);
 
       if (expErr) {
-        console.error('Database error fetching experimental edges:', expErr);
-        return res.status(500).json({ error: 'Failed to fetch edges from database' });
+        console.error("Database error fetching experimental edges:", expErr);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch edges from database" });
       }
       edges = (expEdges ?? []) as Edge[];
     }
@@ -82,22 +96,26 @@ export default async function handler(
     const remaining = Math.max(0, maxEdges - edges.length);
     if (remaining > 0) {
       const { data: predEdges, error: predErr } = await supabase
-        .from('edges')
+        .from("edges")
         .select(edgeSelect)
-        .gte('fusion_pred_prob', minProb)
+        .gte("fusion_pred_prob", minProb)
         .or(
-          queryProteins.map(p => `protein1.eq.${p},protein2.eq.${p}`).join(',')
+          queryProteins
+            .map((p) => `protein1.eq.${p},protein2.eq.${p}`)
+            .join(",")
         )
-        .order('fusion_pred_prob', { ascending: false })
+        .order("fusion_pred_prob", { ascending: false })
         .limit(remaining);
 
       if (predErr) {
-        console.warn('Predicted edges query error:', predErr);
+        console.warn("Predicted edges query error:", predErr);
       } else {
         const typedPredEdges = (predEdges ?? []) as Edge[];
         // Deduplicate edges (in case an edge is both experimental and predicted)
-        const existingEdgeIds = new Set(edges.map(e => e.edge));
-        const newEdges = typedPredEdges.filter(e => !existingEdgeIds.has(e.edge));
+        const existingEdgeIds = new Set(edges.map((e) => e.edge));
+        const newEdges = typedPredEdges.filter(
+          (e) => !existingEdgeIds.has(e.edge)
+        );
         edges = edges.concat(newEdges);
       }
     }
@@ -111,31 +129,37 @@ export default async function handler(
     if (edges.length === 0) {
       // No edges found - check if any query proteins exist in nodes table
       const { data: existingNodes, error: nodeCheckErr } = await supabase
-        .from('nodes')
-        .select('protein')
-        .in('protein', queryProteins);
+        .from("nodes")
+        .select("protein")
+        .in("protein", queryProteins);
 
       if (nodeCheckErr) {
-        console.error('Database error checking nodes:', nodeCheckErr);
-        return res.status(500).json({ error: 'Failed to check proteins in database' });
+        console.error("Database error checking nodes:", nodeCheckErr);
+        return res
+          .status(500)
+          .json({ error: "Failed to check proteins in database" });
       }
 
       if (!existingNodes || existingNodes.length === 0) {
-        return res.status(404).json({ error: 'None of the queried proteins exist in the dataset' });
+        return res
+          .status(404)
+          .json({ error: "None of the queried proteins exist in the dataset" });
       }
 
       // Query proteins exist but have no edges - return them with empty edges
       const { data: nodesData, error: nodesErr } = await supabase
-        .from('nodes')
-        .select('*')
-        .in('protein', queryProteins);
+        .from("nodes")
+        .select("*")
+        .in("protein", queryProteins);
 
       if (nodesErr) {
-        console.error('Database error fetching nodes:', nodesErr);
-        return res.status(500).json({ error: 'Failed to fetch nodes from database' });
+        console.error("Database error fetching nodes:", nodesErr);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch nodes from database" });
       }
 
-      const nodes = (nodesData as Node[]).map(node => ({
+      const nodes = (nodesData as Node[]).map((node) => ({
         ...transformNodeToResponse(node),
         isQuery: true,
       }));
@@ -149,7 +173,7 @@ export default async function handler(
 
     // Step 3: Extract all unique protein IDs from edges
     const proteinIdsSet = new Set<string>(queryProteins);
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       proteinIdsSet.add(edge.protein1);
       proteinIdsSet.add(edge.protein2);
     });
@@ -160,26 +184,36 @@ export default async function handler(
     let limitedProteinIds = allProteinIds;
     if (allProteinIds.length > maxNodes) {
       // Always include query proteins, then add neighbors up to limit
-      const neighborIds = allProteinIds.filter(id => !queryProteins.includes(id));
-      limitedProteinIds = [...queryProteins, ...neighborIds.slice(0, maxNodes - queryProteins.length)];
+      const neighborIds = allProteinIds.filter(
+        (id) => !queryProteins.includes(id)
+      );
+      limitedProteinIds = [
+        ...queryProteins,
+        ...neighborIds.slice(0, maxNodes - queryProteins.length),
+      ];
       nodesTruncated = true;
 
       // Filter edges to only include those connecting limited nodes
       const limitedProteinIdsSet = new Set(limitedProteinIds);
       edges = edges.filter(
-        edge => limitedProteinIdsSet.has(edge.protein1) && limitedProteinIdsSet.has(edge.protein2)
+        (edge) =>
+          limitedProteinIdsSet.has(edge.protein1) &&
+          limitedProteinIdsSet.has(edge.protein2)
       );
     }
 
     // Step 3b: Fetch additional edges where both endpoints are within the limited node set
     const limitedProteinIdsSet = new Set(limitedProteinIds);
-    const existingEdgeIds = new Set(edges.map(edge => edge.edge));
+    const existingEdgeIds = new Set(edges.map((edge) => edge.edge));
     let remainingEdgeCapacity = Math.max(0, maxEdges - edges.length);
 
     const addEdges = (edgeList: Edge[] | null | undefined) => {
       if (!edgeList || remainingEdgeCapacity <= 0) return;
       for (const edge of edgeList) {
-        if (!limitedProteinIdsSet.has(edge.protein1) || !limitedProteinIdsSet.has(edge.protein2)) {
+        if (
+          !limitedProteinIdsSet.has(edge.protein1) ||
+          !limitedProteinIdsSet.has(edge.protein2)
+        ) {
           continue;
         }
         if (existingEdgeIds.has(edge.edge)) {
@@ -194,33 +228,41 @@ export default async function handler(
 
     if (remainingEdgeCapacity > 0) {
       if (preferExperimental) {
-        const { data: intraExperimental, error: intraExperimentalErr } = await supabase
-          .from('edges')
-          .select(edgeSelect)
-          .eq('positive_type', 'experimental')
-          .in('protein1', limitedProteinIds)
-          .in('protein2', limitedProteinIds)
-          .limit(remainingEdgeCapacity);
+        const { data: intraExperimental, error: intraExperimentalErr } =
+          await supabase
+            .from("edges")
+            .select(edgeSelect)
+            .eq("positive_type", "experimental")
+            .in("protein1", limitedProteinIds)
+            .in("protein2", limitedProteinIds)
+            .limit(remainingEdgeCapacity);
 
         if (intraExperimentalErr) {
-          console.warn('Experimental intra-subgraph edges query error:', intraExperimentalErr);
+          console.warn(
+            "Experimental intra-subgraph edges query error:",
+            intraExperimentalErr
+          );
         }
 
         addEdges(intraExperimental as Edge[] | null | undefined);
       }
 
       if (remainingEdgeCapacity > 0) {
-        const { data: intraPredicted, error: intraPredictedErr } = await supabase
-          .from('edges')
-          .select(edgeSelect)
-          .gte('fusion_pred_prob', minProb)
-          .in('protein1', limitedProteinIds)
-          .in('protein2', limitedProteinIds)
-          .order('fusion_pred_prob', { ascending: false })
-          .limit(remainingEdgeCapacity);
+        const { data: intraPredicted, error: intraPredictedErr } =
+          await supabase
+            .from("edges")
+            .select(edgeSelect)
+            .gte("fusion_pred_prob", minProb)
+            .in("protein1", limitedProteinIds)
+            .in("protein2", limitedProteinIds)
+            .order("fusion_pred_prob", { ascending: false })
+            .limit(remainingEdgeCapacity);
 
         if (intraPredictedErr) {
-          console.warn('Predicted intra-subgraph edges query error:', intraPredictedErr);
+          console.warn(
+            "Predicted intra-subgraph edges query error:",
+            intraPredictedErr
+          );
         }
 
         addEdges(intraPredicted as Edge[] | null | undefined);
@@ -234,18 +276,20 @@ export default async function handler(
 
     // Step 4: Query node details for all proteins
     const { data: nodesData, error: nodesErr } = await supabase
-      .from('nodes')
-      .select('*')
-      .in('protein', limitedProteinIds);
+      .from("nodes")
+      .select("*")
+      .in("protein", limitedProteinIds);
 
     if (nodesErr) {
-      console.error('Database error fetching nodes:', nodesErr);
-      return res.status(500).json({ error: 'Failed to fetch nodes from database' });
+      console.error("Database error fetching nodes:", nodesErr);
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch nodes from database" });
     }
 
     // Step 5: Transform and mark nodes
     const queryProteinsSet = new Set(queryProteins);
-    const nodes = (nodesData as Node[]).map(node => ({
+    const nodes = (nodesData as Node[]).map((node) => ({
       ...transformNodeToResponse(node),
       isQuery: queryProteinsSet.has(node.protein),
     }));
@@ -270,8 +314,7 @@ export default async function handler(
 
     return res.status(200).json(response);
   } catch (error) {
-    console.error('Unexpected error in /api/subgraph:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Unexpected error in /api/subgraph:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
-

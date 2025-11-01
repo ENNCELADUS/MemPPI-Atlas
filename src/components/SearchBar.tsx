@@ -1,16 +1,16 @@
-import { useState, FormEvent, KeyboardEvent } from 'react';
-import { useRouter } from 'next/router';
+import { useState, FormEvent, KeyboardEvent } from "react";
+import { useRouter } from "next/router";
 
 interface SearchBarProps {
   placeholder?: string;
 }
 
 export default function SearchBar({
-  placeholder = 'Search by protein ID, e.g., A0A1B0GTQ4 or A0A1B0GTQ4,A0AV02',
+  placeholder = "Search by protein ID, e.g., A0A1B0GTQ4 or A0A1B0GTQ4,A0AV02",
 }: SearchBarProps) {
   const router = useRouter();
-  const [input, setInput] = useState('');
-  const [error, setError] = useState('');
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
 
   const validateProteinIds = (ids: string[]): boolean => {
     // UniProt ID pattern: starts with letter, followed by at least 5 alphanumeric chars
@@ -27,11 +27,11 @@ export default function SearchBar({
     }
 
     // Clear previous error
-    setError('');
+    setError("");
 
     // Parse and validate protein IDs
     const proteinIds = input
-      .split(',')
+      .split(",")
       .map((id) => id.trim().toUpperCase())
       .filter((id) => id.length > 0);
 
@@ -41,18 +41,18 @@ export default function SearchBar({
 
     if (!validateProteinIds(proteinIds)) {
       setError(
-        'Invalid protein ID format. Please use valid UniProt IDs (e.g., A0A1B0GTQ4)'
+        "Invalid protein ID format. Please use valid UniProt IDs (e.g., A0A1B0GTQ4)"
       );
       return;
     }
 
     // Navigate to subgraph page with query params
-    const queryString = proteinIds.join(',');
+    const queryString = proteinIds.join(",");
     router.push(`/subgraph?proteins=${queryString}`);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSubmit();
     }
   };
@@ -61,7 +61,7 @@ export default function SearchBar({
     setInput(value);
     // Clear error on new input
     if (error) {
-      setError('');
+      setError("");
     }
   };
 
@@ -96,4 +96,3 @@ export default function SearchBar({
     </div>
   );
 }
-

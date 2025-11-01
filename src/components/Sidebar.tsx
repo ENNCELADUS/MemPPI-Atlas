@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-import type { NetworkMeta, NetworkStats } from '@/lib/types';
-import StatCard from './StatCard';
+import { useMemo } from "react";
+import type { NetworkMeta, NetworkStats } from "@/lib/types";
+import StatCard from "./StatCard";
 
-type PositiveTypeOption = 'experiment' | 'prediction';
+type PositiveTypeOption = "experiment" | "prediction";
 
 interface SidebarProps {
   stats: NetworkStats;
@@ -12,12 +12,12 @@ interface SidebarProps {
     maxEdges: number;
     onlyVisibleEdges: boolean;
   };
-  onChange: (filters: SidebarProps['filters']) => void;
+  onChange: (filters: SidebarProps["filters"]) => void;
 }
 
 const POSITIVE_TYPE_OPTIONS: { value: PositiveTypeOption; label: string }[] = [
-  { value: 'experiment', label: 'Experimental' },
-  { value: 'prediction', label: 'Predicted' },
+  { value: "experiment", label: "Experimental" },
+  { value: "prediction", label: "Predicted" },
 ];
 
 const MAX_EDGES_MIN = 1000;
@@ -25,8 +25,16 @@ const MAX_EDGES_STEP = 1000;
 const MAX_EDGES_DEFAULT = 50000;
 const MAX_EDGES_MAX = 100000;
 
-export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps) {
-  const positiveTypeSet = useMemo(() => new Set(filters.positiveTypes), [filters.positiveTypes]);
+export default function Sidebar({
+  stats,
+  meta,
+  filters,
+  onChange,
+}: SidebarProps) {
+  const positiveTypeSet = useMemo(
+    () => new Set(filters.positiveTypes),
+    [filters.positiveTypes]
+  );
 
   const handleTogglePositiveType = (option: PositiveTypeOption) => {
     const next = new Set(filters.positiveTypes);
@@ -61,13 +69,19 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
     <aside className="w-full lg:w-80 bg-white border-r border-gray-200 p-6 space-y-6 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Network Controls</h2>
-          <p className="mt-1 text-sm text-gray-600">Limit edges and sources to keep the graph fast.</p>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Network Controls
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Limit edges and sources to keep the graph fast.
+          </p>
         </div>
 
         <div className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Edge Sources</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              Edge Sources
+            </h3>
             <div className="flex flex-wrap gap-2">
               {POSITIVE_TYPE_OPTIONS.map((option) => {
                 const selected = positiveTypeSet.has(option.value);
@@ -77,8 +91,8 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
                     type="button"
                     className={`px-3 py-1.5 text-sm rounded-full border transition ${
                       selected
-                        ? 'bg-blue-100 text-blue-700 border-blue-300'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                        ? "bg-blue-100 text-blue-700 border-blue-300"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
                     }`}
                     onClick={() => handleTogglePositiveType(option.value)}
                   >
@@ -100,7 +114,9 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
               max={MAX_EDGES_MAX}
               step={MAX_EDGES_STEP}
               value={filters.maxEdges}
-              onChange={(event) => handleMaxEdgesChange(Number(event.target.value))}
+              onChange={(event) =>
+                handleMaxEdgesChange(Number(event.target.value))
+              }
               className="w-full"
               aria-label="Maximum edges"
             />
@@ -111,7 +127,9 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
                 max={MAX_EDGES_MAX}
                 step={MAX_EDGES_STEP}
                 value={filters.maxEdges}
-                onChange={(event) => handleMaxEdgesChange(Number(event.target.value))}
+                onChange={(event) =>
+                  handleMaxEdgesChange(Number(event.target.value))
+                }
                 className="w-28 rounded border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <button
@@ -137,25 +155,38 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Network Statistics</h2>
+        <h2 className="text-xl font-semibold text-gray-900">
+          Network Statistics
+        </h2>
         {meta && (
-          <div className="grid grid-cols-2 gap-3 text-sm text-gray-600" aria-label="Network metadata">
+          <div
+            className="grid grid-cols-2 gap-3 text-sm text-gray-600"
+            aria-label="Network metadata"
+          >
             <div className="flex flex-col">
               <span className="text-gray-500">Total nodes</span>
-              <span className="font-semibold text-gray-900">{meta.totalNodes.toLocaleString()}</span>
+              <span className="font-semibold text-gray-900">
+                {meta.totalNodes.toLocaleString()}
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-gray-500">Total edges</span>
-              <span className="font-semibold text-gray-900">{meta.totalEdges.toLocaleString()}</span>
+              <span className="font-semibold text-gray-900">
+                {meta.totalEdges.toLocaleString()}
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-gray-500">Filtered edges</span>
-              <span className="font-semibold text-gray-900">{meta.filteredEdges.toLocaleString()}</span>
+              <span className="font-semibold text-gray-900">
+                {meta.filteredEdges.toLocaleString()}
+              </span>
             </div>
             {meta.timings?.totalMs !== undefined && (
               <div className="flex flex-col">
                 <span className="text-gray-500">Server time (ms)</span>
-                <span className="font-semibold text-gray-900">{meta.timings.totalMs.toLocaleString()}</span>
+                <span className="font-semibold text-gray-900">
+                  {meta.timings.totalMs.toLocaleString()}
+                </span>
               </div>
             )}
           </div>
@@ -163,7 +194,11 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
 
         <StatCard label="Total Nodes" value={stats.totalNodes} />
         <StatCard label="Total Edges" value={stats.totalEdges} />
-        <StatCard label="Enriched Edges" value={stats.enrichedEdgeCount} color="text-red-600" />
+        <StatCard
+          label="Enriched Edges"
+          value={stats.enrichedEdgeCount}
+          color="text-red-600"
+        />
       </div>
 
       <div className="pt-4 border-t border-gray-200">
@@ -175,12 +210,14 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
             {Object.entries(stats.familyCounts)
               .sort((a, b) => b[1] - a[1])
               .map(([family, count]) => (
-                <div 
-                  key={family} 
+                <div
+                  key={family}
                   className="flex justify-between text-sm text-gray-700"
                 >
                   <span>{family}</span>
-                  <span className="font-semibold">{count.toLocaleString()}</span>
+                  <span className="font-semibold">
+                    {count.toLocaleString()}
+                  </span>
                 </div>
               ))}
           </div>
@@ -191,4 +228,3 @@ export default function Sidebar({ stats, meta, filters, onChange }: SidebarProps
     </aside>
   );
 }
-

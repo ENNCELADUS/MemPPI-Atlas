@@ -1,10 +1,13 @@
 # Codex Agent Guide
 
-Mirror of key project rules and specs for the Codex agent.
+## Overall rule
+
+Write code for clarity first. Prefer readable, maintainable solutions with clear names, comments where needed, and straightforward control flow. Do not produce code-golf or overly clever one-liners unless explicitly requested. Use high verbosity for writing code and code tools.
 
 ## Key Rules
 
 ### Guardrails
+
 - First propose a plan; wait for confirmation before coding.
 - Only modify files explicitly named; no side effects elsewhere.
 - Do the simplest thing that works; justify any new dependency.
@@ -17,6 +20,7 @@ Mirror of key project rules and specs for the Codex agent.
 - Be concise—prioritize code and minimal, high-signal prose.
 
 ### Style & Structure
+
 - No duplicate code—reuse existing functions.
 - Extend existing files unless a new file is necessary.
 - Justify each dependency.
@@ -27,6 +31,7 @@ Mirror of key project rules and specs for the Codex agent.
 - Treat users as experts; keep explanations brief and precise.
 
 ### Frontend
+
 - **Framework**: Next.js and React with SSR.
 - **Styling**: Tailwind CSS for all styling.
 - **State**: React Hooks for local state.
@@ -34,17 +39,20 @@ Mirror of key project rules and specs for the Codex agent.
 - **Graph Visualization**: Use Cytoscape.js in a dedicated component.
 
 ### Backend
+
 - **API**: Next.js API Routes.
 - **Database**: Supabase (PostgreSQL), accessed via client library.
 - **Design**: RESTful principles for endpoints.
 - **Data**: Server-side filtering and pagination in Supabase queries.
 
 ### Tests
+
 - **Frameworks**: Jest and React Testing Library.
 - **Structure**: Co-locate tests with source files (e.g., `Component.test.tsx`).
 - **Mocking**: Mock API routes; do not test against the live database.
 
 ### Git Commits
+
 - **Format**: Conventional Commits (`type(scope): summary`).
 - **Guidelines**: Prefer small, focused commits.
 
@@ -55,5 +63,5 @@ Mirror of key project rules and specs for the Codex agent.
 - **api-spec.md**: REST endpoints and request/response shapes (TBD)
 - **data.md**: CSV schemas, relationships, conventions, and usage
 - **test-plan.md**: Unit, integration, and E2E strategy and tooling
-- **roadmap.md**: 
+- **roadmap.md**:
 - **ui-spec.md**: Design system, components, and page layouts

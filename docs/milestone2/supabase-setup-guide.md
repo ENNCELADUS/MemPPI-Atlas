@@ -7,10 +7,12 @@ This guide walks you through creating a Supabase project, setting up the databas
 ## Step 1: Create Supabase Project
 
 1. **Sign up / Log in to Supabase**
+
    - Go to https://supabase.com
    - Create an account or log in
 
 2. **Create a new project**
+
    - Click "New Project"
    - Choose your organization (or create one)
    - Fill in project details:
@@ -32,6 +34,7 @@ This guide walks you through creating a Supabase project, setting up the databas
 ## Step 2: Create Database Tables
 
 1. **Open SQL Editor**
+
    - In Supabase Dashboard, click **SQL Editor** in the left sidebar
    - Click "New query"
 
@@ -57,6 +60,7 @@ node scripts/prepare-csvs-for-import.js
 ```
 
 This will create new CSV files with corrected headers in `/data/supabase-import/`:
+
 - `nodes.csv` - Ready to import (4,445 rows)
 - `edges.csv` - Ready to import (1,085,072 rows)
 
@@ -116,14 +120,14 @@ If your import didn't automatically convert "NA" strings to NULL:
 
 ```sql
 -- Convert NA strings to NULL for numeric columns in edges
-UPDATE edges 
-SET fusion_pred_prob = NULL 
-WHERE fusion_pred_prob IS NOT NULL 
+UPDATE edges
+SET fusion_pred_prob = NULL
+WHERE fusion_pred_prob IS NOT NULL
   AND fusion_pred_prob::TEXT = 'NaN';
 
-UPDATE edges 
-SET tissue_enriched_confidence = NULL 
-WHERE tissue_enriched_confidence IS NOT NULL 
+UPDATE edges
+SET tissue_enriched_confidence = NULL
+WHERE tissue_enriched_confidence IS NOT NULL
   AND tissue_enriched_confidence::TEXT = 'NaN';
 
 -- Convert NA strings to NULL for text columns (optional)
@@ -144,8 +148,8 @@ UPDATE nodes SET expression_tissue = NULL WHERE expression_tissue = 'NA';
 3. Paste and run
 4. Verify RLS is enabled:
    ```sql
-   SELECT tablename, rowsecurity 
-   FROM pg_tables 
+   SELECT tablename, rowsecurity
+   FROM pg_tables
    WHERE tablename IN ('nodes', 'edges');
    -- Both should show rowsecurity = true
    ```
@@ -167,28 +171,29 @@ SELECT * FROM nodes LIMIT 5;
 SELECT * FROM edges LIMIT 5;
 
 -- Check for orphaned edges (should return 0)
-SELECT COUNT(*) 
-FROM edges e 
+SELECT COUNT(*)
+FROM edges e
 WHERE NOT EXISTS (SELECT 1 FROM nodes n WHERE n.protein = e.protein1)
    OR NOT EXISTS (SELECT 1 FROM nodes n WHERE n.protein = e.protein2);
 
 -- Check enriched tissue distribution
-SELECT enriched_tissue, COUNT(*) 
-FROM edges 
-WHERE enriched_tissue IS NOT NULL 
-GROUP BY enriched_tissue 
-ORDER BY COUNT(*) DESC 
+SELECT enriched_tissue, COUNT(*)
+FROM edges
+WHERE enriched_tissue IS NOT NULL
+GROUP BY enriched_tissue
+ORDER BY COUNT(*) DESC
 LIMIT 10;
 
 -- Check family distribution
-SELECT family, COUNT(*) 
-FROM nodes 
-WHERE family IS NOT NULL 
-GROUP BY family 
+SELECT family, COUNT(*)
+FROM nodes
+WHERE family IS NOT NULL
+GROUP BY family
 ORDER BY COUNT(*) DESC;
 ```
 
 Expected results:
+
 - Nodes: 4,445 rows
 - Edges: 1,085,072 rows
 - Zero orphaned edges
@@ -199,12 +204,14 @@ Expected results:
 ## Step 8: Configure Local Environment
 
 1. **Copy environment template**
+
    ```bash
    cp .env.local.example .env.local
    ```
 
 2. **Add your Supabase credentials**
    Edit `.env.local` and replace the placeholder values:
+
    ```env
    NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -224,32 +231,33 @@ Create a simple test API route to verify everything works:
 
 ```typescript
 // pages/api/test-db.ts
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 
 export default async function handler(req, res) {
   const { data: nodes, error: nodesError } = await supabase
-    .from('nodes')
-    .select('count', { count: 'exact', head: true });
-    
+    .from("nodes")
+    .select("count", { count: "exact", head: true });
+
   const { data: edges, error: edgesError } = await supabase
-    .from('edges')
-    .select('count', { count: 'exact', head: true });
+    .from("edges")
+    .select("count", { count: "exact", head: true });
 
   if (nodesError || edgesError) {
-    return res.status(500).json({ 
-      error: nodesError || edgesError 
+    return res.status(500).json({
+      error: nodesError || edgesError,
     });
   }
 
-  res.status(200).json({ 
-    nodes: nodes, 
+  res.status(200).json({
+    nodes: nodes,
     edges: edges,
-    message: 'Database connection successful!' 
+    message: "Database connection successful!",
   });
 }
 ```
 
 Visit http://localhost:3000/api/test-db and you should see:
+
 ```json
 {
   "nodes": 4445,
@@ -263,25 +271,31 @@ Visit http://localhost:3000/api/test-db and you should see:
 ## Troubleshooting
 
 ### Issue: "relation 'nodes' does not exist"
+
 - **Solution**: Make sure you ran `/sql/01_create_tables.sql` in the SQL Editor
 
 ### Issue: "permission denied for table nodes"
+
 - **Solution**: Run `/sql/03_enable_rls.sql` to enable RLS and public read policies
 
 ### Issue: Import takes too long or times out
-- **Solution**: 
+
+- **Solution**:
   - The edges CSV is large (1M+ rows). Be patient.
   - Try importing in smaller chunks using SQL filters
   - Use command line tools like `psql` for faster imports
 
 ### Issue: Foreign key constraint violations
+
 - **Solution**: Import nodes BEFORE edges (nodes must exist first)
 
 ### Issue: "NA" values not converted to NULL
+
 - **Solution**: Run the UPDATE queries from Step 4
 
 ### Issue: Can't connect from Next.js app
-- **Solution**: 
+
+- **Solution**:
   - Verify `.env.local` has correct values
   - Restart dev server after editing `.env.local`
   - Check that RLS policies are enabled
@@ -292,6 +306,7 @@ Visit http://localhost:3000/api/test-db and you should see:
 ## Next Steps
 
 Once data is imported and verified:
+
 - ✅ Milestone 2 is complete!
 - Move to Milestone 3: Create `/api/network` endpoint
 - Test API routes locally before building UI components
@@ -303,4 +318,3 @@ Once data is imported and verified:
 - **Supabase Docs**: https://supabase.com/docs
 - **PostgreSQL COPY**: https://www.postgresql.org/docs/current/sql-copy.html
 - **Supabase RLS**: https://supabase.com/docs/guides/auth/row-level-security
-

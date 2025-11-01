@@ -3,11 +3,11 @@
  * Tests aggregate statistics calculation and error handling
  */
 
-import { createMocks } from 'node-mocks-http';
-import handler from './stats';
-import { supabase } from '@/lib/supabase';
+import { createMocks } from "node-mocks-http";
+import handler from "./stats";
+import { supabase } from "@/lib/supabase";
 
-jest.mock('@/lib/supabase', () => ({
+jest.mock("@/lib/supabase", () => ({
   supabase: {
     from: jest.fn(),
   },
@@ -34,15 +34,20 @@ type CountBuilder = CountResult & {
   not: jest.Mock<{ neq: jest.Mock<CountBuilder, []> }, []>;
   range: jest.Mock<Promise<{ data: unknown[]; error: Error | null }>, []>;
   then: <TResult1 = CountResult, TResult2 = never>(
-    onFulfilled?: ((value: CountResult) => TResult1 | PromiseLike<TResult1>) | null,
-    onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+    onFulfilled?:
+      | ((value: CountResult) => TResult1 | PromiseLike<TResult1>)
+      | null,
+    onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
   ) => Promise<TResult1 | TResult2>;
   catch: <TResult = CountResult>(
-    onRejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
+    onRejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null
   ) => Promise<CountResult | TResult>;
 };
 
-const createCountBuilder = (result: CountResult, overrides: CountOverrides = {}) => {
+const createCountBuilder = (
+  result: CountResult,
+  overrides: CountOverrides = {}
+) => {
   const buildNext = (next: CountResult) => createCountBuilder(next, overrides);
 
   const builder = { ...result } as CountBuilder;
@@ -59,59 +64,72 @@ const createCountBuilder = (result: CountResult, overrides: CountOverrides = {})
   builder.not = jest.fn(() => ({
     neq: jest.fn(() => buildNext(overrides.neq ? overrides.neq() : result)),
   }));
-  builder.range = jest.fn(async () => ({ data: [], error: result.error ?? null }));
-  builder.then = (onFulfilled, onRejected) => Promise.resolve(result).then(onFulfilled, onRejected);
+  builder.range = jest.fn(async () => ({
+    data: [],
+    error: result.error ?? null,
+  }));
+  builder.then = (onFulfilled, onRejected) =>
+    Promise.resolve(result).then(onFulfilled, onRejected);
   builder.catch = (onRejected) => Promise.resolve(result).catch(onRejected);
 
   return builder;
 };
 
-describe('/api/network/stats', () => {
+describe("/api/network/stats", () => {
   beforeEach(() => {
     fromMock.mockReset();
   });
 
-  it('returns aggregate counts and family distribution', async () => {
-    const families = [{ family: 'TM' }, { family: 'TM' }, { family: 'TF' }, { family: 'Other' }];
+  it("returns aggregate counts and family distribution", async () => {
+    const families = [
+      { family: "TM" },
+      { family: "TM" },
+      { family: "TF" },
+      { family: "Other" },
+    ];
 
     fromMock.mockImplementation((table: string) => {
-      if (table === 'nodes') {
+      if (table === "nodes") {
         return {
-          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count === 'exact') {
-              return Promise.resolve({ count: families.length, error: null });
+          select: jest.fn(
+            (_cols: string, opts?: { count?: string; head?: boolean }) => {
+              if (opts?.count === "exact") {
+                return Promise.resolve({ count: families.length, error: null });
+              }
+              return Promise.resolve({ data: families, error: null });
             }
-            return Promise.resolve({ data: families, error: null });
-          }),
+          ),
         };
       }
 
-      if (table === 'edges') {
+      if (table === "edges") {
         return {
-          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.head) {
-              return createCountBuilder(
-                { count: 500, error: null },
-                {
-                  eq: (value) =>
-                    value === 'prediction'
-                      ? { count: 320, error: null }
-                      : { count: 180, error: null },
-                  neq: () => ({ count: 210, error: null }),
-                },
-              );
+          select: jest.fn(
+            (_cols: string, opts?: { count?: string; head?: boolean }) => {
+              if (opts?.head) {
+                return createCountBuilder(
+                  { count: 500, error: null },
+                  {
+                    eq: (value) =>
+                      value === "prediction"
+                        ? { count: 320, error: null }
+                        : { count: 180, error: null },
+                    neq: () => ({ count: 210, error: null }),
+                  }
+                );
+              }
+              return {
+                range: jest.fn(async () => ({ data: [], error: null })),
+              };
             }
-            return {
-              range: jest.fn(async () => ({ data: [], error: null })),
-            };
-          }),
+          ),
         };
       }
 
       return { select: jest.fn() };
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
@@ -124,65 +142,79 @@ describe('/api/network/stats', () => {
     expect(payload.predictedEdgeCount).toBe(320);
   });
 
-  it('returns 500 when node counting fails', async () => {
+  it("returns 500 when node counting fails", async () => {
     fromMock.mockImplementation((table: string) => {
-      if (table === 'nodes') {
+      if (table === "nodes") {
         return {
-          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) =>
-            opts?.count === 'exact'
-              ? Promise.resolve({ count: null, error: new Error('db down') })
-              : Promise.resolve({ data: [], error: null }),
+          select: jest.fn(
+            (_cols: string, opts?: { count?: string; head?: boolean }) =>
+              opts?.count === "exact"
+                ? Promise.resolve({ count: null, error: new Error("db down") })
+                : Promise.resolve({ data: [], error: null })
           ),
         };
       }
-      return { select: jest.fn(() => Promise.resolve({ count: 0, error: null })) };
+      return {
+        select: jest.fn(() => Promise.resolve({ count: 0, error: null })),
+      };
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData()).error).toBe('Failed to count nodes');
+    expect(JSON.parse(res._getData()).error).toBe("Failed to count nodes");
   });
 
-  it('returns 500 when enriched edge count fails', async () => {
+  it("returns 500 when enriched edge count fails", async () => {
     fromMock.mockImplementation((table: string) => {
-      if (table === 'nodes') {
+      if (table === "nodes") {
         return {
-          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) =>
-            opts?.count === 'exact'
-              ? Promise.resolve({ count: 10, error: null })
-              : Promise.resolve({ data: [], error: null }),
+          select: jest.fn(
+            (_cols: string, opts?: { count?: string; head?: boolean }) =>
+              opts?.count === "exact"
+                ? Promise.resolve({ count: 10, error: null })
+                : Promise.resolve({ data: [], error: null })
           ),
         };
       }
 
-      if (table === 'edges') {
+      if (table === "edges") {
         return {
-          select: jest.fn((_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.head) {
-              return createCountBuilder(
-                { count: 100, error: null },
-                {
-                  eq: () => ({ count: 60, error: null }),
-                  neq: () => ({ count: undefined, error: new Error('timeout') }),
-                },
-              );
+          select: jest.fn(
+            (_cols: string, opts?: { count?: string; head?: boolean }) => {
+              if (opts?.head) {
+                return createCountBuilder(
+                  { count: 100, error: null },
+                  {
+                    eq: () => ({ count: 60, error: null }),
+                    neq: () => ({
+                      count: undefined,
+                      error: new Error("timeout"),
+                    }),
+                  }
+                );
+              }
+              return {
+                range: jest.fn(async () => ({
+                  data: [],
+                  error: new Error("range fail"),
+                })),
+              };
             }
-            return {
-              range: jest.fn(async () => ({ data: [], error: new Error('range fail') })),
-            };
-          }),
+          ),
         };
       }
 
       return { select: jest.fn() };
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData()).error).toBe('Failed to count enriched edges');
+    expect(JSON.parse(res._getData()).error).toBe(
+      "Failed to count enriched edges"
+    );
   });
 });

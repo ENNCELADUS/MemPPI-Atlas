@@ -33,4 +33,3 @@ export default function Header({ title = "MemPPI-Atlas" }: HeaderProps) {
     </header>
   );
 }
-

@@ -3,13 +3,13 @@
  * Tests data fetching, transformation, and error handling
  */
 
-import { createMocks } from 'node-mocks-http';
-import handler from './network';
-import { supabase } from '@/lib/supabase';
-import type { Edge, Node } from '@/lib/types';
+import { createMocks } from "node-mocks-http";
+import handler from "./network";
+import { supabase } from "@/lib/supabase";
+import type { Edge, Node } from "@/lib/types";
 
 // Mock the Supabase client
-jest.mock('@/lib/supabase', () => ({
+jest.mock("@/lib/supabase", () => ({
   supabase: {
     from: jest.fn(),
   },
@@ -56,16 +56,16 @@ let currentState: SupabaseMockState = {
 };
 
 class MockEdgeCountBuilder {
-  private positiveType: 'experiment' | 'prediction' | null = null;
+  private positiveType: "experiment" | "prediction" | null = null;
   private minProb = 0;
   private nodeIds: string[] | null = null;
 
   constructor(private readonly edgesState: EdgesMockConfig) {}
 
   eq(column: string, value: string) {
-    if (column === 'positive_type') {
-      const normalized = value === 'experimental' ? 'experiment' : value;
-      if (normalized === 'experiment' || normalized === 'prediction') {
+    if (column === "positive_type") {
+      const normalized = value === "experimental" ? "experiment" : value;
+      if (normalized === "experiment" || normalized === "prediction") {
         this.positiveType = normalized;
       }
     }
@@ -73,15 +73,15 @@ class MockEdgeCountBuilder {
   }
 
   gte(column: string, value: number) {
-    if (column === 'fusion_pred_prob') {
+    if (column === "fusion_pred_prob") {
       this.minProb = value;
     }
     return this;
   }
 
   in(column: string, values: string[] | string) {
-    if (column === 'protein1' || column === 'protein2') {
-      const toArray = Array.isArray(values) ? values : values.split(',');
+    if (column === "protein1" || column === "protein2") {
+      const toArray = Array.isArray(values) ? values : values.split(",");
       this.nodeIds = toArray as string[];
     }
     return this;
@@ -91,10 +91,12 @@ class MockEdgeCountBuilder {
     const filterByNodes = (edges: Edge[] | null | undefined) => {
       if (!this.nodeIds || !edges) return edges ?? [];
       const nodeSet = new Set(this.nodeIds);
-      return edges.filter((edge) => nodeSet.has(edge.protein1) && nodeSet.has(edge.protein2));
+      return edges.filter(
+        (edge) => nodeSet.has(edge.protein1) && nodeSet.has(edge.protein2)
+      );
     };
 
-    if (this.positiveType === 'experiment') {
+    if (this.positiveType === "experiment") {
       const edges = filterByNodes(this.edgesState.experimentalEdges);
       const count =
         this.nodeIds == null && this.edgesState.experimentalCount !== undefined
@@ -107,11 +109,13 @@ class MockEdgeCountBuilder {
       };
     }
 
-    if (this.positiveType === 'prediction') {
-      const filtered = filterByNodes(this.edgesState.predictionEdges).filter((edge) => {
-        const prob = edge.fusion_pred_prob ?? 0;
-        return prob >= this.minProb;
-      });
+    if (this.positiveType === "prediction") {
+      const filtered = filterByNodes(this.edgesState.predictionEdges).filter(
+        (edge) => {
+          const prob = edge.fusion_pred_prob ?? 0;
+          return prob >= this.minProb;
+        }
+      );
       const count =
         this.nodeIds == null && this.edgesState.predictionCount !== undefined
           ? this.edgesState.predictionCount
@@ -129,7 +133,7 @@ class MockEdgeCountBuilder {
         (this.edgesState.predictionEdges ?? []).filter((edge) => {
           const prob = edge.fusion_pred_prob ?? 0;
           return prob >= this.minProb;
-        }),
+        })
       ),
     ];
     const total =
@@ -144,8 +148,18 @@ class MockEdgeCountBuilder {
   }
 
   then<TResult1 = unknown, TResult2 = never>(
-    onfulfilled?: ((value: { data: null; error: Error | null; count: number }) => TResult1 | PromiseLike<TResult1>) | undefined | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | undefined | null,
+    onfulfilled?:
+      | ((value: {
+          data: null;
+          error: Error | null;
+          count: number;
+        }) => TResult1 | PromiseLike<TResult1>)
+      | undefined
+      | null,
+    onrejected?:
+      | ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
+      | undefined
+      | null
   ): Promise<TResult1 | TResult2> {
     try {
       const result = this.buildResult();
@@ -159,14 +173,17 @@ class MockEdgeCountBuilder {
   }
 
   catch<TResult = never>(
-    onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | undefined | null,
+    onrejected?:
+      | ((reason: unknown) => TResult | PromiseLike<TResult>)
+      | undefined
+      | null
   ): Promise<{ data: null; error: Error | null; count: number } | TResult> {
     return this.then(undefined, onrejected);
   }
 }
 
 class MockEdgeDataBuilder {
-  private positiveType: 'experiment' | 'prediction' | null = null;
+  private positiveType: "experiment" | "prediction" | null = null;
   private minProb = 0;
   private limitValue: number | null = null;
   private nodeIds: string[] | null = null;
@@ -177,9 +194,9 @@ class MockEdgeDataBuilder {
   constructor(private readonly edgesState: EdgesMockConfig) {}
 
   eq(column: string, value: string) {
-    if (column === 'positive_type') {
-      const normalized = value === 'experimental' ? 'experiment' : value;
-      if (normalized === 'experiment' || normalized === 'prediction') {
+    if (column === "positive_type") {
+      const normalized = value === "experimental" ? "experiment" : value;
+      if (normalized === "experiment" || normalized === "prediction") {
         this.positiveType = normalized;
       }
     }
@@ -187,7 +204,7 @@ class MockEdgeDataBuilder {
   }
 
   gte(column: string, value: number) {
-    if (column === 'fusion_pred_prob') {
+    if (column === "fusion_pred_prob") {
       this.minProb = value;
     }
     return this;
@@ -198,8 +215,8 @@ class MockEdgeDataBuilder {
   }
 
   in(column: string, values: string[] | string) {
-    if (column === 'protein1' || column === 'protein2') {
-      const toArray = Array.isArray(values) ? values : values.split(',');
+    if (column === "protein1" || column === "protein2") {
+      const toArray = Array.isArray(values) ? values : values.split(",");
       this.nodeIds = toArray as string[];
     }
     return this;
@@ -209,18 +226,20 @@ class MockEdgeDataBuilder {
     if (!edges) return [];
     const probFiltered = edges.filter((edge) => {
       const prob = edge.fusion_pred_prob ?? 0;
-      return this.positiveType === 'prediction' ? prob >= this.minProb : true;
+      return this.positiveType === "prediction" ? prob >= this.minProb : true;
     });
     if (!this.nodeIds) return probFiltered;
     const nodeSet = new Set(this.nodeIds);
-    return probFiltered.filter((edge) => nodeSet.has(edge.protein1) && nodeSet.has(edge.protein2));
+    return probFiltered.filter(
+      (edge) => nodeSet.has(edge.protein1) && nodeSet.has(edge.protein2)
+    );
   }
 
   private getEdges(): Edge[] {
-    if (this.positiveType === 'experiment') {
+    if (this.positiveType === "experiment") {
       return this.filterEdges(this.edgesState.experimentalEdges);
     }
-    if (this.positiveType === 'prediction') {
+    if (this.positiveType === "prediction") {
       return this.filterEdges(this.edgesState.predictionEdges);
     }
     return [
@@ -232,13 +251,15 @@ class MockEdgeDataBuilder {
   private buildResult() {
     const edges = this.getEdges();
     const start = this.useRange ? this.rangeStart : 0;
-    const end = this.useRange ? this.rangeEnd + 1 : this.limitValue ?? Number.MAX_SAFE_INTEGER;
+    const end = this.useRange
+      ? this.rangeEnd + 1
+      : this.limitValue ?? Number.MAX_SAFE_INTEGER;
     const slice = edges.slice(start, Math.min(end, edges.length));
 
     let error: Error | null = null;
-    if (this.positiveType === 'experiment') {
+    if (this.positiveType === "experiment") {
       error = this.edgesState.experimentalError ?? null;
-    } else if (this.positiveType === 'prediction') {
+    } else if (this.positiveType === "prediction") {
       error = this.edgesState.predictionError ?? null;
     }
 
@@ -263,10 +284,13 @@ class MockEdgeDataBuilder {
 }
 
 class TableMock {
-  constructor(private readonly table: string, private readonly state: SupabaseMockState) {}
+  constructor(
+    private readonly table: string,
+    private readonly state: SupabaseMockState
+  ) {}
 
-  select(columns: string, options?: { count?: 'exact'; head?: boolean }) {
-    if (this.table === 'nodes') {
+  select(columns: string, options?: { count?: "exact"; head?: boolean }) {
+    if (this.table === "nodes") {
       const nodesState = this.state.nodes;
       const data = nodesState.data ?? null;
       const error = nodesState.error ?? null;
@@ -274,7 +298,7 @@ class TableMock {
       return Promise.resolve({ data, error, count });
     }
 
-    if (this.table === 'edges') {
+    if (this.table === "edges") {
       if (options?.head) {
         return new MockEdgeCountBuilder(this.state.edges);
       }
@@ -309,43 +333,45 @@ const setupSupabaseMock = (config: Partial<SupabaseMockState>) => {
   };
 
   const mockFrom = supabase.from as jest.Mock;
-  mockFrom.mockImplementation((table: string) => new TableMock(table, currentState));
+  mockFrom.mockImplementation(
+    (table: string) => new TableMock(table, currentState)
+  );
 };
 
-describe('/api/network', () => {
+describe("/api/network", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should return 200 with nodes and edges arrays', async () => {
+  it("should return 200 with nodes and edges arrays", async () => {
     const mockNodes: Node[] = [
       {
-        protein: 'P12345',
-        entry_name: 'PROT1_HUMAN',
-        description: 'Test protein 1',
-        gene_names: 'GENE1 ALIAS1',
-        family: 'TM',
-        expression_tissue: 'Brain\\Kidney\\Liver',
+        protein: "P12345",
+        entry_name: "PROT1_HUMAN",
+        description: "Test protein 1",
+        gene_names: "GENE1 ALIAS1",
+        family: "TM",
+        expression_tissue: "Brain\\Kidney\\Liver",
       },
       {
-        protein: 'Q67890',
-        entry_name: 'PROT2_HUMAN',
-        description: 'Test protein 2',
-        gene_names: 'GENE2',
-        family: 'TF',
-        expression_tissue: 'Brain',
+        protein: "Q67890",
+        entry_name: "PROT2_HUMAN",
+        description: "Test protein 2",
+        gene_names: "GENE2",
+        family: "TF",
+        expression_tissue: "Brain",
       },
     ];
 
     const mockEdges: Edge[] = [
       {
-        edge: 'P12345_Q67890',
-        protein1: 'P12345',
-        protein2: 'Q67890',
+        edge: "P12345_Q67890",
+        protein1: "P12345",
+        protein2: "Q67890",
         fusion_pred_prob: 0.95,
-        enriched_tissue: 'Brain',
-        tissue_enriched_confidence: 'high confidence',
-        positive_type: 'experiment',
+        enriched_tissue: "Brain",
+        tissue_enriched_confidence: "high confidence",
+        positive_type: "experiment",
       },
     ];
 
@@ -362,16 +388,16 @@ describe('/api/network', () => {
     });
 
     const { req, res } = createMocks({
-      method: 'GET',
+      method: "GET",
     });
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
     const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('nodes');
-    expect(data).toHaveProperty('edges');
-    expect(data).toHaveProperty('meta');
+    expect(data).toHaveProperty("nodes");
+    expect(data).toHaveProperty("edges");
+    expect(data).toHaveProperty("meta");
     expect(data.meta).toMatchObject({
       totalNodes: mockNodes.length,
       totalEdges: 100,
@@ -381,27 +407,27 @@ describe('/api/network', () => {
     expect(Array.isArray(data.edges)).toBe(true);
   });
 
-  it('should transform snake_case to camelCase correctly', async () => {
+  it("should transform snake_case to camelCase correctly", async () => {
     const mockNodes = [
       {
-        protein: 'P12345',
-        entry_name: 'PROT1_HUMAN',
-        description: 'Test protein',
-        gene_names: 'GENE1',
-        family: 'TM',
-        expression_tissue: 'Brain\\Kidney',
+        protein: "P12345",
+        entry_name: "PROT1_HUMAN",
+        description: "Test protein",
+        gene_names: "GENE1",
+        family: "TM",
+        expression_tissue: "Brain\\Kidney",
       },
     ];
 
     const mockEdges = [
       {
-        edge: 'P12345_Q67890',
-        protein1: 'P12345',
-        protein2: 'Q67890',
+        edge: "P12345_Q67890",
+        protein1: "P12345",
+        protein2: "Q67890",
         fusion_pred_prob: 0.85,
-        enriched_tissue: 'Brain',
-        tissue_enriched_confidence: 'high confidence',
-        positive_type: 'experiment',
+        enriched_tissue: "Brain",
+        tissue_enriched_confidence: "high confidence",
+        positive_type: "experiment",
       },
     ];
 
@@ -414,39 +440,39 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     const data = JSON.parse(res._getData());
-    
+
     // Check node transformation
     expect(data.nodes[0]).toMatchObject({
-      id: 'P12345',
-      label: 'PROT1_HUMAN',
-      geneNames: 'GENE1',
+      id: "P12345",
+      label: "PROT1_HUMAN",
+      geneNames: "GENE1",
     });
 
     // Check edge transformation
     expect(data.edges[0]).toMatchObject({
-      id: 'P12345_Q67890',
-      source: 'P12345',
-      target: 'Q67890',
+      id: "P12345_Q67890",
+      source: "P12345",
+      target: "Q67890",
       fusionPredProb: 0.85,
-      enrichedTissue: 'Brain',
-      tissueEnrichedConfidence: 'high confidence',
-      positiveType: 'experiment',
+      enrichedTissue: "Brain",
+      tissueEnrichedConfidence: "high confidence",
+      positiveType: "experiment",
     });
   });
 
-  it('should parse tissue arrays correctly', async () => {
+  it("should parse tissue arrays correctly", async () => {
     const mockNodes = [
       {
-        protein: 'P12345',
-        entry_name: 'PROT1_HUMAN',
-        description: 'Test protein',
-        gene_names: 'GENE1',
-        family: 'TM',
-        expression_tissue: 'Brain\\Kidney\\Liver',
+        protein: "P12345",
+        entry_name: "PROT1_HUMAN",
+        description: "Test protein",
+        gene_names: "GENE1",
+        family: "TM",
+        expression_tissue: "Brain\\Kidney\\Liver",
       },
     ];
 
@@ -460,22 +486,26 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     const data = JSON.parse(res._getData());
-    expect(data.nodes[0].expressionTissue).toEqual(['Brain', 'Kidney', 'Liver']);
+    expect(data.nodes[0].expressionTissue).toEqual([
+      "Brain",
+      "Kidney",
+      "Liver",
+    ]);
   });
 
-  it('should handle NA tissue values as empty array', async () => {
+  it("should handle NA tissue values as empty array", async () => {
     const mockNodes = [
       {
-        protein: 'P12345',
-        entry_name: 'PROT1_HUMAN',
-        description: 'Test protein',
-        gene_names: 'GENE1',
-        family: 'TM',
-        expression_tissue: 'NA',
+        protein: "P12345",
+        entry_name: "PROT1_HUMAN",
+        description: "Test protein",
+        gene_names: "GENE1",
+        family: "TM",
+        expression_tissue: "NA",
       },
     ];
 
@@ -489,50 +519,50 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     const data = JSON.parse(res._getData());
     expect(data.nodes[0].expressionTissue).toEqual([]);
   });
 
-  it('should return 500 on database error when fetching nodes', async () => {
+  it("should return 500 on database error when fetching nodes", async () => {
     const mockNodes = [
       {
-        protein: 'P12345',
-        entry_name: 'PROT1_HUMAN',
-        description: 'Test protein',
-        gene_names: 'GENE1',
-        family: 'TM',
-        expression_tissue: 'Brain',
+        protein: "P12345",
+        entry_name: "PROT1_HUMAN",
+        description: "Test protein",
+        gene_names: "GENE1",
+        family: "TM",
+        expression_tissue: "Brain",
       },
     ];
 
     setupSupabaseMock({
       nodes: {
         data: mockNodes,
-        error: new Error('Database connection failed'),
+        error: new Error("Database connection failed"),
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
     const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Failed to fetch nodes from database');
+    expect(data).toHaveProperty("error");
+    expect(data.error).toBe("Failed to fetch nodes from database");
   });
 
-  it('should return 500 on database error when fetching edges', async () => {
+  it("should return 500 on database error when fetching edges", async () => {
     const mockNodes = [
       {
-        protein: 'P12345',
-        entry_name: 'PROT1_HUMAN',
-        description: 'Test protein',
-        gene_names: 'GENE1',
-        family: 'TM',
-        expression_tissue: 'Brain',
+        protein: "P12345",
+        entry_name: "PROT1_HUMAN",
+        description: "Test protein",
+        gene_names: "GENE1",
+        family: "TM",
+        expression_tissue: "Brain",
       },
     ];
 
@@ -544,23 +574,23 @@ describe('/api/network', () => {
         totalCount: 1,
         experimentalCount: 1,
         experimentalEdges: null,
-        experimentalError: new Error('Database connection failed'),
+        experimentalError: new Error("Database connection failed"),
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
     const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('error');
-    expect(data.error).toBe('Internal server error');
+    expect(data).toHaveProperty("error");
+    expect(data.error).toBe("Internal server error");
   });
 
-  it('should handle null values in node fields gracefully', async () => {
+  it("should handle null values in node fields gracefully", async () => {
     const mockNodes = [
       {
-        protein: 'P12345',
+        protein: "P12345",
         entry_name: null,
         description: null,
         gene_names: null,
@@ -579,35 +609,35 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET' });
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
     const data = JSON.parse(res._getData());
     expect(data.nodes[0]).toMatchObject({
-      id: 'P12345',
-      label: 'P12345', // Falls back to protein ID when entry_name is null
-      description: '',
-      geneNames: '',
-      family: '',
+      id: "P12345",
+      label: "P12345", // Falls back to protein ID when entry_name is null
+      description: "",
+      geneNames: "",
+      family: "",
       expressionTissue: [],
     });
   });
 
-  it('should return 405 for non-GET requests', async () => {
-    const { req, res } = createMocks({ method: 'POST' });
+  it("should return 405 for non-GET requests", async () => {
+    const { req, res } = createMocks({ method: "POST" });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(405);
     const data = JSON.parse(res._getData());
-    expect(data.error).toBe('Method not allowed');
+    expect(data.error).toBe("Method not allowed");
   });
 
-  it('clamps maxEdges and reports filteredEdges', async () => {
+  it("clamps maxEdges and reports filteredEdges", async () => {
     const mockNodes: Node[] = [
       {
-        protein: 'P00001',
-        entry_name: 'NODE1',
+        protein: "P00001",
+        entry_name: "NODE1",
         description: null,
         gene_names: null,
         family: null,
@@ -617,22 +647,22 @@ describe('/api/network', () => {
 
     const experimentalEdges: Edge[] = [
       {
-        edge: 'E1',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "E1",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 0.9,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'experiment',
+        positive_type: "experiment",
       },
       {
-        edge: 'E2',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "E2",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 0.8,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'experiment',
+        positive_type: "experiment",
       },
     ];
 
@@ -645,7 +675,10 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET', query: { maxEdges: '1' } });
+    const { req, res } = createMocks({
+      method: "GET",
+      query: { maxEdges: "1" },
+    });
 
     await handler(req, res);
 
@@ -653,14 +686,16 @@ describe('/api/network', () => {
     const data = JSON.parse(res._getData());
     expect(data.edges).toHaveLength(1);
     expect(data.meta.filteredEdges).toBe(1);
-    expect(res.getHeader('Cache-Control')).toBe('public, s-maxage=60, stale-while-revalidate=300');
+    expect(res.getHeader("Cache-Control")).toBe(
+      "public, s-maxage=60, stale-while-revalidate=300"
+    );
   });
 
-  it('filters edges by positiveType=prediction', async () => {
+  it("filters edges by positiveType=prediction", async () => {
     const mockNodes: Node[] = [
       {
-        protein: 'P00001',
-        entry_name: 'NODE1',
+        protein: "P00001",
+        entry_name: "NODE1",
         description: null,
         gene_names: null,
         family: null,
@@ -670,25 +705,25 @@ describe('/api/network', () => {
 
     const experimentalEdges: Edge[] = [
       {
-        edge: 'EXP1',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "EXP1",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 0.1,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'experiment',
+        positive_type: "experiment",
       },
     ];
 
     const predictionEdges: Edge[] = [
       {
-        edge: 'PRED1',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "PRED1",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 0.95,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'prediction',
+        positive_type: "prediction",
       },
     ];
 
@@ -704,23 +739,23 @@ describe('/api/network', () => {
     });
 
     const { req, res } = createMocks({
-      method: 'GET',
-      query: { positiveType: 'prediction' },
+      method: "GET",
+      query: { positiveType: "prediction" },
     });
 
     await handler(req, res);
 
     const data = JSON.parse(res._getData());
     expect(data.edges).toHaveLength(1);
-    expect(data.edges[0].positiveType).toBe('prediction');
+    expect(data.edges[0].positiveType).toBe("prediction");
     expect(data.meta.filteredEdges).toBe(1);
   });
 
-  it('returns cytoscape elements when format=cyto', async () => {
+  it("returns cytoscape elements when format=cyto", async () => {
     const mockNodes: Node[] = [
       {
-        protein: 'P00001',
-        entry_name: 'NODE1',
+        protein: "P00001",
+        entry_name: "NODE1",
         description: null,
         gene_names: null,
         family: null,
@@ -730,13 +765,13 @@ describe('/api/network', () => {
 
     const predictionEdges: Edge[] = [
       {
-        edge: 'PRED1',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "PRED1",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 0.95,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'prediction',
+        positive_type: "prediction",
       },
     ];
 
@@ -749,7 +784,10 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET', query: { format: 'cyto', positiveType: 'prediction' } });
+    const { req, res } = createMocks({
+      method: "GET",
+      query: { format: "cyto", positiveType: "prediction" },
+    });
 
     await handler(req, res);
 
@@ -759,11 +797,11 @@ describe('/api/network', () => {
     expect(data.meta.totalNodes).toBe(mockNodes.length);
   });
 
-  it('returns zero filteredEdges when edges=false', async () => {
+  it("returns zero filteredEdges when edges=false", async () => {
     const mockNodes: Node[] = [
       {
-        protein: 'P00001',
-        entry_name: 'NODE1',
+        protein: "P00001",
+        entry_name: "NODE1",
         description: null,
         gene_names: null,
         family: null,
@@ -773,13 +811,13 @@ describe('/api/network', () => {
 
     const predictionEdges: Edge[] = [
       {
-        edge: 'PRED1',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "PRED1",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 0.95,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'prediction',
+        positive_type: "prediction",
       },
     ];
 
@@ -792,7 +830,10 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET', query: { edges: 'false' } });
+    const { req, res } = createMocks({
+      method: "GET",
+      query: { edges: "false" },
+    });
 
     await handler(req, res);
 
@@ -801,11 +842,11 @@ describe('/api/network', () => {
     expect(data.meta.filteredEdges).toBe(0);
   });
 
-  it('clamps minProb between 0 and 1', async () => {
+  it("clamps minProb between 0 and 1", async () => {
     const mockNodes: Node[] = [
       {
-        protein: 'P00001',
-        entry_name: 'NODE1',
+        protein: "P00001",
+        entry_name: "NODE1",
         description: null,
         gene_names: null,
         family: null,
@@ -815,13 +856,13 @@ describe('/api/network', () => {
 
     const predictionEdges: Edge[] = [
       {
-        edge: 'PRED1',
-        protein1: 'P00001',
-        protein2: 'P00001',
+        edge: "PRED1",
+        protein1: "P00001",
+        protein2: "P00001",
         fusion_pred_prob: 1,
         enriched_tissue: null,
         tissue_enriched_confidence: null,
-        positive_type: 'prediction',
+        positive_type: "prediction",
       },
     ];
 
@@ -834,7 +875,10 @@ describe('/api/network', () => {
       },
     });
 
-    const { req, res } = createMocks({ method: 'GET', query: { minProb: '5', positiveType: 'prediction' } });
+    const { req, res } = createMocks({
+      method: "GET",
+      query: { minProb: "5", positiveType: "prediction" },
+    });
 
     await handler(req, res);
 
@@ -842,4 +886,3 @@ describe('/api/network', () => {
     expect(data.edges).toHaveLength(1);
   });
 });
-

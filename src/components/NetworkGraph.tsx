@@ -1,21 +1,27 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type cytoscapeType from 'cytoscape';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type cytoscapeType from "cytoscape";
 import type {
   EdgeDefinition,
   ElementDefinition,
   EventObject,
   LayoutOptions,
   NodeDefinition,
-} from 'cytoscape';
-import fcose from 'cytoscape-fcose';
-import LoadingSpinner from './LoadingSpinner';
+} from "cytoscape";
+import fcose from "cytoscape-fcose";
+import LoadingSpinner from "./LoadingSpinner";
 import {
   cyStyles,
   fcoseLayout,
   largeGraphThreshold,
   rendererOptions,
-} from '@/lib/cytoscape-config';
-import type { CytoscapeElements } from '@/lib/graphUtils';
+} from "@/lib/cytoscape-config";
+import type { CytoscapeElements } from "@/lib/graphUtils";
 
 type CytoscapeWithExtensions = cytoscapeType & {
   use: (extension: unknown) => void;
@@ -32,59 +38,82 @@ type TooltipState = {
   isQuery?: boolean;
 };
 
-const isEdgeElement = (element: ElementDefinition): element is EdgeDefinition => {
-  const data = element.data as EdgeDefinition['data'] | undefined;
-  return Boolean(data && 'source' in data && 'target' in data);
+const isEdgeElement = (
+  element: ElementDefinition
+): element is EdgeDefinition => {
+  const data = element.data as EdgeDefinition["data"] | undefined;
+  return Boolean(data && "source" in data && "target" in data);
 };
 
-const isNodeElement = (element: ElementDefinition): element is NodeDefinition => {
-  const data = element.data as NodeDefinition['data'] | undefined;
-  return Boolean(data && !('source' in data));
+const isNodeElement = (
+  element: ElementDefinition
+): element is NodeDefinition => {
+  const data = element.data as NodeDefinition["data"] | undefined;
+  return Boolean(data && !("source" in data));
 };
 
 interface NetworkGraphProps {
   elements: CytoscapeElements;
   isLoading?: boolean;
-  progress?: { nodesLoaded: boolean; edgesLoaded: number; edgesTotal: number } | null;
+  progress?: {
+    nodesLoaded: boolean;
+    edgesLoaded: number;
+    edgesTotal: number;
+  } | null;
   onError?: (err: unknown) => void;
   layout?: LayoutOptions;
 }
 
-export default function NetworkGraph({ elements, isLoading, progress, onError, layout = fcoseLayout }: NetworkGraphProps) {
+export default function NetworkGraph({
+  elements,
+  isLoading,
+  progress,
+  onError,
+  layout = fcoseLayout,
+}: NetworkGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscapeType.Core | null>(null);
   const [ready, setReady] = useState(false);
-  const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, x: 0, y: 0, label: '' });
+  const [tooltip, setTooltip] = useState<TooltipState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    label: "",
+  });
 
   const ensureQueryPriority = useCallback(() => {
     const cy = cyRef.current;
     if (!cy) return;
     cy.batch(() => {
-      const queryNodes = cy.nodes('[?isQuery]');
+      const queryNodes = cy.nodes("[?isQuery]");
       if (queryNodes.length === 0) return;
-      queryNodes.style({ 'z-index': 1000 });
-      queryNodes.connectedEdges().style({ 'z-index': 900 });
+      queryNodes.style({ "z-index": 1000 });
+      queryNodes.connectedEdges().style({ "z-index": 900 });
     });
   }, []);
 
-  const edgeCount = useMemo(() => elements.filter(isEdgeElement).length, [elements]);
+  const edgeCount = useMemo(
+    () => elements.filter(isEdgeElement).length,
+    [elements]
+  );
   const largeGraph = edgeCount > largeGraphThreshold;
 
   useEffect(() => {
     (async () => {
       try {
-        const cytoscapeModule = await import('cytoscape');
-        const cytoscapeFactory = cytoscapeModule.default as unknown as CytoscapeWithExtensions;
+        const cytoscapeModule = await import("cytoscape");
+        const cytoscapeFactory =
+          cytoscapeModule.default as unknown as CytoscapeWithExtensions;
         cytoscapeFactory.use(fcose);
         if (!containerRef.current) return;
         const instance = cytoscapeFactory({
           container: containerRef.current,
           elements: [],
           style: cyStyles,
-          layout: { name: 'preset' },
+          layout: { name: "preset" },
           textureOnViewport: true,
           wheelSensitivity: 0.2,
-          selectionType: 'single',
+          selectionType: "single",
           boxSelectionEnabled: false,
           autoungrabify: false,
           autounselectify: false,
@@ -103,17 +132,17 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
               node.unselect();
               return;
             }
-            instance.$('node:selected').unselect();
+            instance.$("node:selected").unselect();
             node.select();
           }
         };
         const handleTapBackground = (event: EventObject) => {
           if (event.target === instance) {
-            instance.$('node:selected').unselect();
+            instance.$("node:selected").unselect();
           }
         };
-        instance.on('tap', 'node', handleTapNode);
-        instance.on('tap', handleTapBackground);
+        instance.on("tap", "node", handleTapNode);
+        instance.on("tap", handleTapBackground);
         cyRef.current = instance;
         setReady(true);
       } catch (err) {
@@ -123,7 +152,7 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
     return () => {
       const current = cyRef.current;
       if (current) {
-        current.off('tap');
+        current.off("tap");
         current.destroy();
       }
       cyRef.current = null;
@@ -153,13 +182,18 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
 
     try {
       const layoutInstance = cy.layout(layout);
-      layoutInstance.one?.('layoutstop', ensureQueryPriority);
+      layoutInstance.one?.("layoutstop", ensureQueryPriority);
       layoutInstance.run();
     } catch {
       // fallback to built-in cose if layout fails
-      const fallbackLayout: LayoutOptions = { name: 'cose', animate: false, fit: true, padding: 30 };
+      const fallbackLayout: LayoutOptions = {
+        name: "cose",
+        animate: false,
+        fit: true,
+        padding: 30,
+      };
       const fallbackInstance = cy.layout(fallbackLayout);
-      fallbackInstance.one?.('layoutstop', ensureQueryPriority);
+      fallbackInstance.one?.("layoutstop", ensureQueryPriority);
       fallbackInstance.run();
     }
     cy.fit(undefined, 30);
@@ -185,9 +219,9 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
       cyRef.current?.resize();
       hideTooltip();
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [hideTooltip, ready]);
 
@@ -199,7 +233,7 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
       const node = event.target;
       if (!node?.isNode?.()) return;
       const rendered = node.renderedPosition();
-      const data = node.data() as NodeDefinition['data'] & {
+      const data = node.data() as NodeDefinition["data"] & {
         geneNames?: string;
         expressionTissue?: string[];
       };
@@ -209,17 +243,25 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
       const padding = 16;
       const tooltipWidth = 240;
       const tooltipHeight = 120;
-      const clampedX = Math.min(Math.max(rendered.x + padding, padding), Math.max(padding, rect.width - tooltipWidth));
-      const clampedY = Math.min(Math.max(rendered.y - padding, padding), Math.max(padding, rect.height - tooltipHeight));
+      const clampedX = Math.min(
+        Math.max(rendered.x + padding, padding),
+        Math.max(padding, rect.width - tooltipWidth)
+      );
+      const clampedY = Math.min(
+        Math.max(rendered.y - padding, padding),
+        Math.max(padding, rect.height - tooltipHeight)
+      );
 
       setTooltip({
         visible: true,
         x: clampedX,
         y: clampedY,
-        label: (data.label as string) || (data.id as string) || 'Protein',
+        label: (data.label as string) || (data.id as string) || "Protein",
         family: (data.family as string) || undefined,
         geneNames: (data.geneNames as string) || undefined,
-        expression: Array.isArray(data.expressionTissue) ? data.expressionTissue : undefined,
+        expression: Array.isArray(data.expressionTissue)
+          ? data.expressionTissue
+          : undefined,
         isQuery: Boolean(data.isQuery),
       });
     };
@@ -232,21 +274,24 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
       hideTooltip();
     };
 
-    cy.on('mouseover', 'node', handleNodeOver);
-    cy.on('mouseout', 'node', handleNodeOut);
-    cy.on('drag', 'node', handleNodeOut);
-    cy.on('viewport', handleViewportChange);
+    cy.on("mouseover", "node", handleNodeOver);
+    cy.on("mouseout", "node", handleNodeOut);
+    cy.on("drag", "node", handleNodeOut);
+    cy.on("viewport", handleViewportChange);
 
     return () => {
-      cy.off('mouseover', 'node', handleNodeOver);
-      cy.off('mouseout', 'node', handleNodeOut);
-      cy.off('drag', 'node', handleNodeOut);
-      cy.off('viewport', handleViewportChange);
+      cy.off("mouseover", "node", handleNodeOver);
+      cy.off("mouseout", "node", handleNodeOut);
+      cy.off("drag", "node", handleNodeOut);
+      cy.off("viewport", handleViewportChange);
     };
   }, [hideTooltip, ready]);
 
   return (
-    <div className="relative h-full w-full rounded-lg bg-white" aria-label="Network graph">
+    <div
+      className="relative h-full w-full rounded-lg bg-white"
+      aria-label="Network graph"
+    >
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
           <div className="rounded-lg border border-gray-200 bg-white/90 p-6 text-center shadow-sm">
@@ -256,40 +301,58 @@ export default function NetworkGraph({ elements, isLoading, progress, onError, l
                 <div className="mb-2 h-2 w-full overflow-hidden rounded bg-gray-200">
                   <div
                     className="h-2 bg-blue-600"
-                    style={{ width: `${Math.min(100, Math.round((progress.edgesLoaded / Math.max(1, progress.edgesTotal)) * 100))}%` }}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round(
+                          (progress.edgesLoaded /
+                            Math.max(1, progress.edgesTotal)) *
+                            100
+                        )
+                      )}%`,
+                    }}
                   />
                 </div>
                 <p className="text-xs text-gray-600">
-                  Nodes: {progress.nodesLoaded ? '✓' : 'loading'} | Edges: {progress.edgesLoaded.toLocaleString()} / {progress.edgesTotal.toLocaleString()}
+                  Nodes: {progress.nodesLoaded ? "✓" : "loading"} | Edges:{" "}
+                  {progress.edgesLoaded.toLocaleString()} /{" "}
+                  {progress.edgesTotal.toLocaleString()}
                 </p>
               </div>
             )}
           </div>
         </div>
       )}
-      <div ref={containerRef} className="h-full w-full" data-testid="network-graph" />
+      <div
+        ref={containerRef}
+        className="h-full w-full"
+        data-testid="network-graph"
+      />
       {tooltip.visible && (
         <div
           className={`pointer-events-none absolute z-20 max-w-xs rounded-md border border-gray-200 bg-white/95 p-3 text-left shadow-lg transition ${
-            tooltip.isQuery ? 'ring-2 ring-blue-200' : ''
+            tooltip.isQuery ? "ring-2 ring-blue-200" : ""
           }`}
           style={{ left: tooltip.x, top: tooltip.y }}
         >
           <p className="text-sm font-semibold text-gray-900">{tooltip.label}</p>
           {tooltip.geneNames && (
             <p className="mt-1 text-xs text-gray-600">
-              <span className="font-medium text-gray-700">Genes:</span> {tooltip.geneNames}
+              <span className="font-medium text-gray-700">Genes:</span>{" "}
+              {tooltip.geneNames}
             </p>
           )}
           {tooltip.family && (
             <p className="mt-1 text-xs text-gray-600">
-              <span className="font-medium text-gray-700">Family:</span> {tooltip.family}
+              <span className="font-medium text-gray-700">Family:</span>{" "}
+              {tooltip.family}
             </p>
           )}
           {tooltip.expression && tooltip.expression.length > 0 && (
             <p className="mt-1 text-xs text-gray-500">
-              <span className="font-medium text-gray-700">Expression:</span> {tooltip.expression.slice(0, 3).join(', ')}
-              {tooltip.expression.length > 3 ? '…' : ''}
+              <span className="font-medium text-gray-700">Expression:</span>{" "}
+              {tooltip.expression.slice(0, 3).join(", ")}
+              {tooltip.expression.length > 3 ? "…" : ""}
             </p>
           )}
         </div>

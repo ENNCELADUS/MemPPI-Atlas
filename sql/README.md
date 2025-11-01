@@ -5,21 +5,25 @@ This directory contains SQL scripts for setting up the Supabase PostgreSQL datab
 ## Scripts
 
 ### 01_create_tables.sql
+
 Creates the `nodes` and `edges` tables with proper schemas, indexes, and foreign key constraints.
 
 **Run first**: This must be executed before importing any data.
 
 **Usage**:
+
 - Open Supabase Dashboard → SQL Editor
 - Copy and paste the entire file
 - Click "Run"
 
 ### 02_import_data.sql
+
 Contains SQL commands and instructions for importing CSV data using PostgreSQL COPY commands.
 
 **Note**: For most users, the Supabase Dashboard import feature (Method A in the setup guide) is easier. This script provides SQL-based alternatives.
 
 ### 03_enable_rls.sql
+
 Enables Row Level Security (RLS) on both tables and creates public read-only access policies.
 
 **Run last**: Execute this after all data has been imported successfully.
@@ -57,4 +61,3 @@ DROP TABLE IF EXISTS nodes CASCADE;
 ```
 
 Then re-run `01_create_tables.sql`.
-

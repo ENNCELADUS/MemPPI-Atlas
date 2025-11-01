@@ -3,6 +3,7 @@
 ## Source Files
 
 CSV files stored in `/data` directory (used for initial import only):
+
 - `data/edge_info_with_exp.csv`
 - `data/node_info_with_exp.csv`
 
@@ -12,33 +13,35 @@ CSV files stored in `/data` directory (used for initial import only):
 
 ### edge_info_with_exp.csv
 
-| Column | Type | Description | Example |
-|--------|------|-------------|---------|
-| `Edge` | String | Concatenation of interacting protein accessions (`Protein1_Protein2`) | `P12345_Q67890` |
-| `Protein1` | String | UniProt accession of first protein | `P12345` |
-| `Protein2` | String | UniProt accession of second protein | `Q67890` |
-| `Fusion_Pred_Prob` | Float | Model probability that the edge reflects a fusion-derived interaction (0-1) | `0.95` |
-| `Enriched_tissue` | String | Tissue where interaction is enriched; `NA` if not available | `Brain` or `NA` |
-| `Tissue_enriched_confidence` | String | Confidence level for the tissue enrichment; `NA` if not available | `high confidence`, `low confidence`, or `NA` |
-| `Positive_type` | String | Source label for the interaction | `prediction`, `experimental` |
+| Column                       | Type   | Description                                                                 | Example                                      |
+| ---------------------------- | ------ | --------------------------------------------------------------------------- | -------------------------------------------- |
+| `Edge`                       | String | Concatenation of interacting protein accessions (`Protein1_Protein2`)       | `P12345_Q67890`                              |
+| `Protein1`                   | String | UniProt accession of first protein                                          | `P12345`                                     |
+| `Protein2`                   | String | UniProt accession of second protein                                         | `Q67890`                                     |
+| `Fusion_Pred_Prob`           | Float  | Model probability that the edge reflects a fusion-derived interaction (0-1) | `0.95`                                       |
+| `Enriched_tissue`            | String | Tissue where interaction is enriched; `NA` if not available                 | `Brain` or `NA`                              |
+| `Tissue_enriched_confidence` | String | Confidence level for the tissue enrichment; `NA` if not available           | `high confidence`, `low confidence`, or `NA` |
+| `Positive_type`              | String | Source label for the interaction                                            | `prediction`, `experimental`                 |
 
 **Notes:**
+
 - Headers are quoted in CSV
 - Missing values are represented as `NA`
 - Edge IDs use underscore delimiter: `Protein1_Protein2`
 
 ### node_info_with_exp.csv
 
-| Column | Type | Description | Example |
-|--------|------|-------------|---------|
-| `protein` | String | UniProt accession (primary identifier) | `P12345` |
-| `Entry.Name` | String | UniProt entry name | `PROT1_HUMAN` |
-| `Description` | String | Short functional description | `Transmembrane protein involved in...` |
-| `Gene.Names` | String | Associated gene symbols or aliases | `GENE1 ALIAS1 ALIAS2` |
-| `Family` | String | Protein family annotation | `TM` (transmembrane), `TF` (transcription factor) |
-| `Expression.tissue` | String | Backslash-delimited list of tissues with reported expression | `Brain\Kidney\Liver` |
+| Column              | Type   | Description                                                  | Example                                           |
+| ------------------- | ------ | ------------------------------------------------------------ | ------------------------------------------------- |
+| `protein`           | String | UniProt accession (primary identifier)                       | `P12345`                                          |
+| `Entry.Name`        | String | UniProt entry name                                           | `PROT1_HUMAN`                                     |
+| `Description`       | String | Short functional description                                 | `Transmembrane protein involved in...`            |
+| `Gene.Names`        | String | Associated gene symbols or aliases                           | `GENE1 ALIAS1 ALIAS2`                             |
+| `Family`            | String | Protein family annotation                                    | `TM` (transmembrane), `TF` (transcription factor) |
+| `Expression.tissue` | String | Backslash-delimited list of tissues with reported expression | `Brain\Kidney\Liver`                              |
 
 **Notes:**
+
 - Headers use dot notation (e.g., `Entry.Name`)
 - Tissue delimiter: backslash (`\`)
 - Missing values are `NA`
@@ -114,10 +117,11 @@ CREATE INDEX idx_edges_fusion_prob ON edges(fusion_pred_prob);
    - Check row counts match CSV line counts (minus header)
    - Test queries for each index
 5. **Enable RLS (Row Level Security):**
+
    ```sql
    ALTER TABLE nodes ENABLE ROW LEVEL SECURITY;
    ALTER TABLE edges ENABLE ROW LEVEL SECURITY;
-   
+
    -- Allow public read access
    CREATE POLICY "Public read access" ON nodes FOR SELECT USING (true);
    CREATE POLICY "Public read access" ON edges FOR SELECT USING (true);
@@ -128,20 +132,22 @@ CREATE INDEX idx_edges_fusion_prob ON edges(fusion_pred_prob);
 ## Data Relationships
 
 ### Primary Key Relationships
+
 - `nodes.protein` (PK) ← `edges.protein1` (FK)
 - `nodes.protein` (PK) ← `edges.protein2` (FK)
 
 ### Graph Structure
+
 - **Undirected Network:** Each edge connects two proteins (order doesn't imply directionality)
 - **Neighbor Query:** To find neighbors of protein `P`:
   ```sql
-  SELECT * FROM edges 
+  SELECT * FROM edges
   WHERE protein1 = 'P' OR protein2 = 'P';
   ```
 - **Subgraph Query:** To get all edges among a set of proteins `[P1, P2, ...]`:
   ```sql
   SELECT * FROM edges
-  WHERE protein1 IN ('P1', 'P2', ...) 
+  WHERE protein1 IN ('P1', 'P2', ...)
     AND protein2 IN ('P1', 'P2', ...);
   ```
 
@@ -150,78 +156,89 @@ CREATE INDEX idx_edges_fusion_prob ON edges(fusion_pred_prob);
 ## Query Patterns
 
 ### 1. Full Network (Page 1)
+
 ```javascript
 // Get all nodes
-const { data: nodes } = await supabase.from('nodes').select('*');
+const { data: nodes } = await supabase.from("nodes").select("*");
 
 // Get all edges
-const { data: edges } = await supabase.from('edges').select('*');
+const { data: edges } = await supabase.from("edges").select("*");
 ```
 
 ### 2. Network Statistics (Page 1 Sidebar)
+
 ```javascript
 // Count nodes
 const { count: nodeCount } = await supabase
-  .from('nodes')
-  .select('*', { count: 'exact', head: true });
+  .from("nodes")
+  .select("*", { count: "exact", head: true });
 
 // Count edges
 const { count: edgeCount } = await supabase
-  .from('edges')
-  .select('*', { count: 'exact', head: true });
+  .from("edges")
+  .select("*", { count: "exact", head: true });
 
 // Family distribution
 const { data: families } = await supabase
-  .from('nodes')
-  .select('family')
-  .not('family', 'is', null);
+  .from("nodes")
+  .select("family")
+  .not("family", "is", null);
 // Aggregate in JavaScript or use Supabase RPC function
 ```
 
 ### 3. Subgraph for Query Proteins (Page 2)
+
 ```javascript
-const queryProteins = ['P12345', 'Q67890'];
+const queryProteins = ["P12345", "Q67890"];
 
 // Get edges where ANY queried protein is involved
 const { data: edges } = await supabase
-  .from('edges')
-  .select('*')
-  .or(`protein1.in.(${queryProteins.join(',')}),protein2.in.(${queryProteins.join(',')})`);
+  .from("edges")
+  .select("*")
+  .or(
+    `protein1.in.(${queryProteins.join(",")}),protein2.in.(${queryProteins.join(
+      ","
+    )})`
+  );
 
 // Extract unique neighbor proteins
 const neighbors = new Set();
-edges.forEach(e => {
+edges.forEach((e) => {
   neighbors.add(e.protein1);
   neighbors.add(e.protein2);
 });
 
 // Get node details for all proteins in subgraph
 const { data: nodes } = await supabase
-  .from('nodes')
-  .select('*')
-  .in('protein', Array.from(neighbors));
+  .from("nodes")
+  .select("*")
+  .in("protein", Array.from(neighbors));
 ```
 
 ### 4. Search Nodes by Name/Gene
+
 ```javascript
-const searchTerm = 'BRCA';
+const searchTerm = "BRCA";
 
 const { data } = await supabase
-  .from('nodes')
-  .select('*')
-  .or(`protein.ilike.%${searchTerm}%,entry_name.ilike.%${searchTerm}%,gene_names.ilike.%${searchTerm}%`)
+  .from("nodes")
+  .select("*")
+  .or(
+    `protein.ilike.%${searchTerm}%,entry_name.ilike.%${searchTerm}%,gene_names.ilike.%${searchTerm}%`
+  )
   .limit(10);
 ```
 
 ### 5. Filter Edges by Probability
+
 ```javascript
 const minProb = 0.8;
 
 const { data } = await supabase
-  .from('edges')
-  .select('*')
-  .gte('fusion_pred_prob', minProb)
-  .order('fusion_pred_prob', { ascending: false })
+  .from("edges")
+  .select("*")
+  .gte("fusion_pred_prob", minProb)
+  .order("fusion_pred_prob", { ascending: false })
   .limit(100);
 ```
 
@@ -230,14 +247,17 @@ const { data } = await supabase
 ## Data Conventions
 
 ### Identifiers
+
 - **Canonical Key:** UniProt accession (`protein` field in nodes table)
 - **Edge Naming:** `Protein1_Protein2` where Protein1 < Protein2 lexicographically (enforced during import)
 
 ### Missing Values
+
 - **CSV:** `NA` (string literal)
 - **Supabase:** `NULL` for numeric fields, `NA` or `NULL` for text (current spec keeps `NA`)
 
 ### Delimiters
+
 - **Tissue Lists:** Backslash (`\`) in `expression_tissue` field
   - Example: `Brain\Kidney\Liver`
   - Parse: `expressionTissue.split('\\')`
@@ -245,6 +265,7 @@ const { data } = await supabase
   - Example: `BRCA1 RNF53 BRCAI`
 
 ### Enrichment Status
+
 - **Enriched Edge:** `enriched_tissue IS NOT NULL` and `enriched_tissue != 'NA'`
 - **Non-Enriched Edge:** `enriched_tissue IS NULL` or `enriched_tissue = 'NA'`
 
@@ -253,6 +274,7 @@ const { data } = await supabase
 ## Website Data Usage
 
 ### Page 1: Global Network View
+
 - **Network Plot:**
   - Nodes: All from `nodes` table
   - Edges: All from `edges` table
@@ -264,6 +286,7 @@ const { data } = await supabase
   - Enriched edge count (filter `enriched_tissue IS NOT NULL`)
 
 ### Page 2: Subgraph View
+
 - **Visualization:**
   - Queried nodes + 1-hop neighbors
   - Filter edges to only show connections within this subgraph
@@ -275,6 +298,7 @@ const { data } = await supabase
   - Sort: By `fusion_pred_prob` descending
 
 ### Filtering & Pagination
+
 - **Server-Side:** All filtering happens in Supabase queries (use `.range()` for pagination)
 - **Client-Side:** Only for small datasets or UI-level sorting/filtering of already-loaded data
 
@@ -283,15 +307,18 @@ const { data } = await supabase
 ## Performance Considerations
 
 ### Indexing Strategy
+
 - **Primary Keys:** Automatic B-tree indexes on `protein` and `edge`
 - **Foreign Keys:** Indexes on `protein1` and `protein2` for fast neighbor lookups
 - **Filter Fields:** Indexes on `family`, `enriched_tissue`, `positive_type` for sidebar stats and filtering
 
 ### Caching
+
 - **Static Data:** Full network data rarely changes; cache in-memory or Redis for 1 hour
 - **Dynamic Queries:** Subgraph queries are user-specific; no caching needed
 
 ### Query Optimization
+
 - Use `select('column1, column2')` instead of `select('*')` when only specific columns are needed
 - Use `{ count: 'exact', head: true }` for count-only queries (no data transfer)
 - Limit results to reasonable defaults (10-100 rows) with pagination
@@ -302,7 +329,7 @@ const { data } = await supabase
 
 - ✅ **Searchable fields:** Search by `protein`, `entry_name`, and `gene_names`
 - ✅ **Pagination:** Use Supabase `.range(start, end)` with default limit of 10
-- ✅ **Sort keys:** 
+- ✅ **Sort keys:**
   - Nodes: Alphabetical by `protein`
   - Edges: By `fusion_pred_prob` descending
 - ✅ **Tissue parsing:** Store as backslash-delimited string; parse client-side when displaying

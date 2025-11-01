@@ -14,6 +14,7 @@
 ## Module Map
 
 ### Frontend (Next.js Pages)
+
 ```
 /src/pages
 ├── index.tsx              # Page 1: Global Network View
@@ -23,6 +24,7 @@
 ```
 
 ### API Routes
+
 ```
 /src/pages/api
 ├── network.ts            # GET full network data
@@ -34,6 +36,7 @@
 ```
 
 ### Components
+
 ```
 /src/components
 ├── Header.tsx            # Site header with logo and title
@@ -47,6 +50,7 @@
 ```
 
 ### Library/Utilities
+
 ```
 /src/lib
 ├── supabase.ts           # Supabase client initialization
@@ -56,12 +60,14 @@
 ```
 
 ### Styles
+
 ```
 /src/styles
 └── globals.css           # Global styles and Tailwind imports
 ```
 
 ### Data Layer
+
 ```
 Supabase Tables:
 - nodes                   # Imported from node_info_with_exp.csv
@@ -69,6 +75,7 @@ Supabase Tables:
 ```
 
 ### Static Assets
+
 ```
 /public
 ├── favicon.ico           # Site favicon
@@ -76,6 +83,7 @@ Supabase Tables:
 ```
 
 ### Data Files
+
 ```
 /data
 ├── node_info_with_exp.csv    # Node/protein information
@@ -88,6 +96,7 @@ Supabase Tables:
 ## Data Flow
 
 ### Page 1: Global Network View
+
 1. User navigates to `/` (home page)
 2. Page component calls `getServerSideProps` or client-side fetch to:
    - `/api/network` → Get all nodes and edges
@@ -98,6 +107,7 @@ Supabase Tables:
 6. On submit, redirect to `/subgraph?proteins=P12345,Q67890`
 
 ### Page 2: Subgraph View
+
 1. User arrives from search or direct URL with `?proteins=...`
 2. Page component extracts query params
 3. Calls `/api/subgraph?proteins=P12345,Q67890`
@@ -112,6 +122,7 @@ Supabase Tables:
    - `DataTable` for top 10 edges
 
 ### API Layer Data Flow
+
 ```
 API Route → Supabase Client → PostgreSQL Query → JSON Response
 ```
@@ -121,25 +132,30 @@ API Route → Supabase Client → PostgreSQL Query → JSON Response
 ## Dependencies
 
 ### Core
+
 - `next` (^14.0.0): React framework
 - `react` (^18.0.0): UI library
 - `react-dom` (^18.0.0): React DOM renderer
 
 ### Database & Backend
+
 - `@supabase/supabase-js` (^2.0.0): Supabase client
 - `@supabase/auth-helpers-nextjs` (^0.8.0): Next.js auth helpers (if needed later)
 
 ### UI & Styling
+
 - `tailwindcss` (^3.4.0): Utility-first CSS
 - `autoprefixer` (^10.0.0): PostCSS plugin
 - `postcss` (^8.0.0): CSS processor
 
 ### Graph Visualization
+
 - `cytoscape` (^3.28.0): Core graph library
 - `cytoscape-fcose` (^2.2.0): Force-directed layout
 - `react-cytoscapejs` (^2.0.0): React wrapper (optional)
 
 ### Development
+
 - `typescript` (^5.0.0): Type safety
 - `@types/react` (^18.0.0): React types
 - `@types/node` (^20.0.0): Node types
@@ -147,6 +163,7 @@ API Route → Supabase Client → PostgreSQL Query → JSON Response
 - `eslint-config-next` (^14.0.0): Next.js ESLint config
 
 ### Testing
+
 - `jest` (^29.0.0): Test runner
 - `@testing-library/react` (^14.0.0): React component testing
 - `@testing-library/jest-dom` (^6.0.0): Jest matchers
@@ -157,6 +174,7 @@ API Route → Supabase Client → PostgreSQL Query → JSON Response
 ## Component Communication
 
 ### Global Network Page
+
 ```
 index.tsx
   ├── Sidebar (receives stats data)
@@ -168,6 +186,7 @@ index.tsx
 ```
 
 ### Subgraph Page
+
 ```
 subgraph.tsx
   ├── SubgraphView (receives filtered nodes + edges)
@@ -182,6 +201,7 @@ subgraph.tsx
 ## Database Schema (Supabase)
 
 ### Table: `nodes`
+
 ```sql
 CREATE TABLE nodes (
   protein TEXT PRIMARY KEY,
@@ -197,6 +217,7 @@ CREATE INDEX idx_nodes_gene_names ON nodes USING gin(to_tsvector('english', gene
 ```
 
 ### Table: `edges`
+
 ```sql
 CREATE TABLE edges (
   edge TEXT PRIMARY KEY,
@@ -219,10 +240,12 @@ CREATE INDEX idx_edges_positive_type ON edges(positive_type);
 ## Cytoscape.js Integration
 
 ### Layout Strategy
+
 - **Global Network (Page 1):** Use `fcose` (force-directed) layout for organic clustering
 - **Subgraph (Page 2):** Use `cose` or `circle` layout for clarity with fewer nodes
 
 ### Styling Strategy
+
 - **Nodes:**
   - Color by `family` (TM = blue, TF = green, etc.)
   - Size: fixed or based on degree centrality
@@ -233,6 +256,7 @@ CREATE INDEX idx_edges_positive_type ON edges(positive_type);
   - Length: Shorter for experimental positives, scaled by `fusionPredProb` for predictions
 
 ### Performance Considerations
+
 - Lazy-load Cytoscape.js client-side only (not in SSR)
 - For large networks (>5000 nodes), implement viewport culling or progressive loading
 - Use `headless: false` for rendering, `headless: true` for analysis only
@@ -253,6 +277,7 @@ CREATE INDEX idx_edges_positive_type ON edges(positive_type);
 ## Deployment Strategy
 
 ### Vercel Deployment
+
 1. Connect GitHub repository to Vercel
 2. Configure environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
@@ -261,6 +286,7 @@ CREATE INDEX idx_edges_positive_type ON edges(positive_type);
 4. Preview deployments for pull requests
 
 ### Supabase Setup
+
 1. Create Supabase project
 2. Run table creation SQL scripts
 3. Import CSV data using Supabase dashboard or CLI

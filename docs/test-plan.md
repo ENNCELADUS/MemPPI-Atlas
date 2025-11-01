@@ -28,17 +28,21 @@ This document outlines the testing strategy for the MemPPI-Atlas web application
 ### 1. Utility Functions (`/lib`)
 
 #### `lib/graphUtils.ts`
+
 - **Test:** Transform Supabase node data to Cytoscape.js format
+
   - Input: Array of node objects from API
   - Output: Cytoscape.js node array with `{ data: { id, label, ... } }`
   - Edge cases: Empty array, missing fields, null values
 
 - **Test:** Transform edge data to Cytoscape.js format
+
   - Input: Array of edge objects from API
   - Output: Cytoscape.js edge array with `{ data: { id, source, target, ... } }`
   - Edge cases: Self-loops, duplicate edges
 
 - **Test:** Parse backslash-delimited tissue strings
+
   - Input: `"Brain\\Kidney\\Liver"`
   - Output: `["Brain", "Kidney", "Liver"]`
   - Edge cases: Empty string, single tissue, `NA` value
@@ -51,13 +55,13 @@ This document outlines the testing strategy for the MemPPI-Atlas web application
 **File:** `lib/graphUtils.test.ts`
 
 ```typescript
-describe('graphUtils', () => {
-  describe('transformNodesToCytoscape', () => {
-    it('should transform API nodes to Cytoscape format', () => {
+describe("graphUtils", () => {
+  describe("transformNodesToCytoscape", () => {
+    it("should transform API nodes to Cytoscape format", () => {
       // Test implementation
     });
-    
-    it('should handle empty array', () => {
+
+    it("should handle empty array", () => {
       // Test implementation
     });
   });
@@ -71,8 +75,8 @@ describe('graphUtils', () => {
 - **Test:** Node style based on family
   - Input: Node with `family: "TM"`
   - Output: Style object with correct color
-  
 - **Test:** Edge style based on enrichment
+
   - Input: Edge with `enrichedTissue: "Brain"`
   - Output: Red color, width based on probability
 
@@ -90,6 +94,7 @@ Mock Supabase client using `@supabase/supabase-js` manual mocks.
 ### 1. `/api/network`
 
 - **Test:** Returns all nodes and edges
+
   - Mock Supabase to return sample data
   - Assert response has `nodes` and `edges` arrays
   - Assert HTTP 200 status
@@ -101,19 +106,19 @@ Mock Supabase client using `@supabase/supabase-js` manual mocks.
 **File:** `pages/api/network.test.ts`
 
 ```typescript
-import { createMocks } from 'node-mocks-http';
-import handler from './network';
+import { createMocks } from "node-mocks-http";
+import handler from "./network";
 
-jest.mock('../../lib/supabase');
+jest.mock("../../lib/supabase");
 
-describe('/api/network', () => {
-  it('should return nodes and edges', async () => {
-    const { req, res } = createMocks({ method: 'GET' });
+describe("/api/network", () => {
+  it("should return nodes and edges", async () => {
+    const { req, res } = createMocks({ method: "GET" });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(200);
     const data = JSON.parse(res._getData());
-    expect(data).toHaveProperty('nodes');
-    expect(data).toHaveProperty('edges');
+    expect(data).toHaveProperty("nodes");
+    expect(data).toHaveProperty("edges");
   });
 });
 ```
@@ -125,7 +130,6 @@ describe('/api/network', () => {
 - **Test:** Returns correct statistics
   - Mock Supabase to return 100 nodes, 250 edges
   - Assert `totalNodes: 100`, `totalEdges: 250`
-  
 - **Test:** Calculates family counts correctly
   - Mock nodes with families: 50 TM, 30 TF, 20 Other
   - Assert `familyCounts: { TM: 50, TF: 30, Other: 20 }`
@@ -139,15 +143,12 @@ describe('/api/network', () => {
 - **Test:** Returns subgraph for single protein
   - Mock Supabase to return protein + 3 neighbors
   - Assert response has 4 nodes, 3 edges
-  
 - **Test:** Returns subgraph for multiple proteins
   - Query: `P12345,Q67890`
   - Assert both are marked `isQuery: true`
-  
 - **Test:** Returns 404 if protein not found
   - Query: `INVALID123`
   - Assert HTTP 404 and error message
-  
 - **Test:** Returns 400 if proteins parameter missing
   - No query params
   - Assert HTTP 400
@@ -161,11 +162,9 @@ describe('/api/network', () => {
 - **Test:** Returns paginated results
   - Query: `limit=10&offset=0`
   - Assert 10 results returned
-  
 - **Test:** Filters by family
   - Query: `family=TM`
   - Assert all results have `family: "TM"`
-  
 - **Test:** Search by gene name
   - Query: `search=BRCA`
   - Assert results contain "BRCA" in protein, entry_name, or gene_names
@@ -179,7 +178,6 @@ describe('/api/network', () => {
 - **Test:** Filters by minimum probability
   - Query: `minProbability=0.8`
   - Assert all edges have `fusionPredProb >= 0.8`
-  
 - **Test:** Filters by protein
   - Query: `protein=P12345`
   - Assert all edges have `protein1: "P12345"` OR `protein2: "P12345"`
@@ -197,11 +195,9 @@ Use React Testing Library to test component rendering and user interactions. Moc
 - **Test:** Renders Cytoscape container
   - Render with sample nodes/edges
   - Assert canvas element exists
-  
 - **Test:** Shows loading state
   - Render with `isLoading={true}`
   - Assert loading spinner displayed
-  
 - **Test:** Handles empty network
   - Render with empty nodes/edges
   - Assert "No data" message displayed
@@ -209,18 +205,20 @@ Use React Testing Library to test component rendering and user interactions. Moc
 **File:** `components/NetworkGraph.test.tsx`
 
 ```typescript
-import { render, screen } from '@testing-library/react';
-import NetworkGraph from './NetworkGraph';
+import { render, screen } from "@testing-library/react";
+import NetworkGraph from "./NetworkGraph";
 
-jest.mock('cytoscape', () => jest.fn(() => ({
-  layout: jest.fn(() => ({ run: jest.fn() })),
-  destroy: jest.fn(),
-})));
+jest.mock("cytoscape", () =>
+  jest.fn(() => ({
+    layout: jest.fn(() => ({ run: jest.fn() })),
+    destroy: jest.fn(),
+  }))
+);
 
-describe('NetworkGraph', () => {
-  it('renders without crashing', () => {
+describe("NetworkGraph", () => {
+  it("renders without crashing", () => {
     render(<NetworkGraph nodes={[]} edges={[]} />);
-    expect(screen.getByTestId('network-graph')).toBeInTheDocument();
+    expect(screen.getByTestId("network-graph")).toBeInTheDocument();
   });
 });
 ```
@@ -232,11 +230,9 @@ describe('NetworkGraph', () => {
 - **Test:** Accepts user input
   - Type "P12345" into input
   - Assert input value is "P12345"
-  
 - **Test:** Submits search on Enter key
   - Type "P12345" and press Enter
   - Assert navigation to `/subgraph?proteins=P12345`
-  
 - **Test:** Handles comma-separated proteins
   - Type "P12345,Q67890"
   - Assert navigation includes both proteins
@@ -250,11 +246,9 @@ describe('NetworkGraph', () => {
 - **Test:** Renders table with data
   - Pass array of 10 rows
   - Assert 10 rows displayed
-  
 - **Test:** Displays column headers
   - Pass columns: `['protein', 'family']`
   - Assert headers rendered correctly
-  
 - **Test:** Handles empty data
   - Pass empty array
   - Assert "No results" message
@@ -268,7 +262,6 @@ describe('NetworkGraph', () => {
 - **Test:** Displays statistics
   - Pass stats: `{ totalNodes: 100, totalEdges: 250 }`
   - Assert "100" and "250" displayed
-  
 - **Test:** Shows family distribution
   - Pass `familyCounts: { TM: 50, TF: 30 }`
   - Assert "TM: 50" and "TF: 30" displayed
@@ -282,7 +275,6 @@ describe('NetworkGraph', () => {
 - **Test:** Renders color swatches
   - Assert TM family has blue color swatch
   - Assert TF family has green color swatch
-  
 - **Test:** Displays enrichment indicator
   - Assert "Red = Enriched" label exists
 
@@ -298,7 +290,6 @@ describe('NetworkGraph', () => {
   - Mock `/api/network` and `/api/network/stats`
   - Assert NetworkGraph receives data
   - Assert Sidebar receives stats
-  
 - **Test:** Renders search bar
   - Assert SearchBar component exists at bottom
 
@@ -312,12 +303,10 @@ describe('NetworkGraph', () => {
   - URL: `/subgraph?proteins=P12345`
   - Mock `/api/subgraph`
   - Assert SubgraphView receives data
-  
 - **Test:** Displays data tables
   - Mock API with 5 nodes, 3 edges
   - Assert node table has 5 rows
   - Assert edge table has 3 rows
-  
 - **Test:** Shows error for invalid protein
   - Mock 404 response
   - Assert error message displayed
@@ -331,6 +320,7 @@ describe('NetworkGraph', () => {
 End-to-end tests simulate real user workflows in a browser.
 
 ### Setup
+
 ```bash
 npm install -D @playwright/test
 npx playwright install
@@ -339,35 +329,38 @@ npx playwright install
 ### Test Scenarios
 
 #### 1. Global Network Navigation
+
 ```typescript
-test('user can view global network', async ({ page }) => {
-  await page.goto('/');
+test("user can view global network", async ({ page }) => {
+  await page.goto("/");
   await expect(page.locator('[data-testid="network-graph"]')).toBeVisible();
-  await expect(page.locator('text=Total Nodes')).toBeVisible();
+  await expect(page.locator("text=Total Nodes")).toBeVisible();
 });
 ```
 
 #### 2. Search Workflow
+
 ```typescript
-test('user can search for protein and view subgraph', async ({ page }) => {
-  await page.goto('/');
-  await page.fill('input[placeholder*="Search"]', 'P12345');
-  await page.press('input[placeholder*="Search"]', 'Enter');
-  
-  await expect(page).toHaveURL('/subgraph?proteins=P12345');
+test("user can search for protein and view subgraph", async ({ page }) => {
+  await page.goto("/");
+  await page.fill('input[placeholder*="Search"]', "P12345");
+  await page.press('input[placeholder*="Search"]', "Enter");
+
+  await expect(page).toHaveURL("/subgraph?proteins=P12345");
   await expect(page.locator('[data-testid="subgraph-view"]')).toBeVisible();
-  await expect(page.locator('table')).toHaveCount(2); // Node and edge tables
+  await expect(page.locator("table")).toHaveCount(2); // Node and edge tables
 });
 ```
 
 #### 3. Multi-Protein Search
+
 ```typescript
-test('user can search for multiple proteins', async ({ page }) => {
-  await page.goto('/');
-  await page.fill('input[placeholder*="Search"]', 'P12345,Q67890');
-  await page.press('input[placeholder*="Search"]', 'Enter');
-  
-  await expect(page).toHaveURL('/subgraph?proteins=P12345,Q67890');
+test("user can search for multiple proteins", async ({ page }) => {
+  await page.goto("/");
+  await page.fill('input[placeholder*="Search"]', "P12345,Q67890");
+  await page.press('input[placeholder*="Search"]', "Enter");
+
+  await expect(page).toHaveURL("/subgraph?proteins=P12345,Q67890");
   // Assert both proteins appear in subgraph
 });
 ```
@@ -383,6 +376,7 @@ test('user can search for multiple proteins', async ({ page }) => {
 Create a manual mock for `@supabase/supabase-js`:
 
 **File:** `__mocks__/@supabase/supabase-js.ts`
+
 ```typescript
 export const createClient = jest.fn(() => ({
   from: jest.fn((table) => ({
@@ -401,6 +395,7 @@ export const createClient = jest.fn(() => ({
 ### Cytoscape.js Mock
 
 **File:** `__mocks__/cytoscape.ts`
+
 ```typescript
 export default jest.fn(() => ({
   add: jest.fn(),
@@ -422,6 +417,7 @@ export default jest.fn(() => ({
 - **Pages:** >70% (integration-level coverage)
 
 ### Run Coverage
+
 ```bash
 npm test -- --coverage
 ```
@@ -433,6 +429,7 @@ npm test -- --coverage
 ### GitHub Actions Workflow
 
 **File:** `.github/workflows/test.yml`
+
 ```yaml
 name: Tests
 
@@ -445,7 +442,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm test -- --coverage
       - run: npm run lint

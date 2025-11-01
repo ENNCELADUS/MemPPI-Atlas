@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -15,7 +15,8 @@ const defaultFallback = (error: Error | null, reset: () => void) => (
   <div className="mx-auto max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow">
     <p className="text-sm font-semibold text-red-600">Something went wrong</p>
     <p className="mt-2 text-xs text-red-500">
-      {error?.message || 'An unexpected error occurred while rendering this view.'}
+      {error?.message ||
+        "An unexpected error occurred while rendering this view."}
     </p>
     <button
       type="button"
@@ -27,7 +28,10 @@ const defaultFallback = (error: Error | null, reset: () => void) => (
   </div>
 );
 
-export default class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
+export default class AppErrorBoundary extends Component<
+  AppErrorBoundaryProps,
+  AppErrorBoundaryState
+> {
   state: AppErrorBoundaryState = {
     hasError: false,
     error: null,
@@ -39,9 +43,9 @@ export default class AppErrorBoundary extends Component<AppErrorBoundaryProps, A
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     this.props.onError?.(error, info);
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== "production") {
       // eslint-disable-next-line no-console
-      console.error('AppErrorBoundary caught an error', error, info);
+      console.error("AppErrorBoundary caught an error", error, info);
     }
   }
 
@@ -65,5 +69,3 @@ export default class AppErrorBoundary extends Component<AppErrorBoundaryProps, A
     return <>{children}</>;
   }
 }
-
-

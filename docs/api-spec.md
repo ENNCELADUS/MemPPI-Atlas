@@ -3,6 +3,7 @@
 All API routes are implemented as Next.js API Routes under `/pages/api/`. They follow RESTful principles and return JSON responses.
 
 ## Base URL
+
 - Development: `http://localhost:3000/api`
 - Production: `https://[your-domain]/api`
 
@@ -15,10 +16,12 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 **Purpose:** Fetch the complete PPI network data for Page 1 (Global Network View).
 
 **Query Parameters:**
+
 - `limit` (optional, number): Maximum number of nodes to return. Default: all nodes.
 - `edgeLimit` (optional, number): Maximum number of edges to return. Default: all edges.
 
 **Response:**
+
 ```json
 {
   "nodes": [
@@ -46,6 +49,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 ```
 
 **Status Codes:**
+
 - `200 OK`: Success
 - `500 Internal Server Error`: Database or parsing error
 
@@ -58,6 +62,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 **Query Parameters:** None
 
 **Response:**
+
 ```json
 {
   "totalNodes": 1845,
@@ -73,6 +78,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 ```
 
 **Status Codes:**
+
 - `200 OK`: Success
 - `500 Internal Server Error`: Database error
 
@@ -83,6 +89,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 **Purpose:** Fetch a subgraph containing the queried protein(s) and their immediate neighbors (one-step connections) for Page 2.
 
 **Query Parameters:**
+
 - `proteins` (required, string): Comma-separated list of UniProt accessions (e.g., `P12345` or `P12345,Q67890`). Case-insensitive; returned as uppercase.
 - `minProb` (optional, number): Minimum fusion prediction probability (default: `0.8`, range: 0-1)
 - `preferExperimental` (optional, boolean): Prefer experimental edges over predicted (default: `true`)
@@ -90,6 +97,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 - `maxNodes` (optional, number): Maximum number of nodes to return (default: `1000`, max: `5000`)
 
 **Response:**
+
 ```json
 {
   "query": ["P12345"],
@@ -132,18 +140,21 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 ```
 
 **Response Fields:**
+
 - `query`: Array of queried protein IDs (uppercase)
 - `nodes`: Array of nodes with `isQuery` flag (true for queried proteins, false for neighbors)
 - `edges`: Array of edges connecting proteins in the subgraph
 - `truncated` (optional): Present only if results were limited by maxNodes/maxEdges
 
 **Status Codes:**
+
 - `200 OK`: Success (even if only some queried proteins exist)
 - `400 Bad Request`: Missing or invalid `proteins` parameter
 - `404 Not Found`: None of the queried proteins exist in the dataset
 - `500 Internal Server Error`: Database error
 
 **Notes:**
+
 - Protein IDs are case-insensitive but always returned as uppercase
 - If a queried protein has no edges, it will still be returned with an empty edges array (200)
 - If multiple proteins are queried and only some exist, returns data for found proteins (200)
@@ -157,6 +168,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 **Purpose:** Query node information with optional filtering and pagination.
 
 **Query Parameters:**
+
 - `search` (optional, string): Search by protein accession, entry name, or gene name
 - `family` (optional, string): Filter by protein family (e.g., `TM`, `TF`)
 - `tissue` (optional, string): Filter by expression tissue
@@ -164,6 +176,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 - `offset` (optional, number): Offset for pagination. Default: 0
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -183,6 +196,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 ```
 
 **Status Codes:**
+
 - `200 OK`: Success
 - `500 Internal Server Error`: Database error
 
@@ -193,6 +207,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 **Purpose:** Query edge information with optional filtering and pagination.
 
 **Query Parameters:**
+
 - `protein` (optional, string): Filter edges connected to a specific protein
 - `minProbability` (optional, number): Minimum fusion prediction probability (0-1)
 - `tissue` (optional, string): Filter by enriched tissue
@@ -201,6 +216,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 - `offset` (optional, number): Offset for pagination. Default: 0
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -221,6 +237,7 @@ All API routes are implemented as Next.js API Routes under `/pages/api/`. They f
 ```
 
 **Status Codes:**
+
 - `200 OK`: Success
 - `500 Internal Server Error`: Database error
 
@@ -250,4 +267,3 @@ All error responses follow this structure:
 4. **Authentication:** Not required for MVP (public dataset).
 5. **CORS:** Configure for production domain when deploying to Vercel.
 6. **Performance:** Use database indexes on `protein`, `family`, and `enrichedTissue` columns for fast filtering.
-

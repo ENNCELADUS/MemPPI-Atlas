@@ -30,16 +30,13 @@ export default function DataTable({ columns, data, caption }: DataTableProps) {
         </thead>
         <tbody>
           {data.slice(0, 10).map((row, idx) => (
-            <tr
-              key={idx}
-              className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-            >
+            <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
               {columns.map((col) => (
                 <td
                   key={col.key}
                   className="border-b border-gray-200 px-4 py-3 text-sm text-gray-700"
                 >
-                  {row[col.key] ?? ''}
+                  {row[col.key] ?? ""}
                 </td>
               ))}
             </tr>
@@ -49,4 +46,3 @@ export default function DataTable({ columns, data, caption }: DataTableProps) {
     </div>
   );
 }
-
