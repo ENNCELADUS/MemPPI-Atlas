@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # File-mode tests read the runtime CSVs; skip other LFS files to save bandwidth.
+      - name: Fetch runtime data (Git LFS)
+        run: git lfs pull --include "data/supabase-import/**"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+  image:
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the version tag and release on main
+      packages: write # push the image to GHCR
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/memppi-atlas
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      # The image holds 2.3 GB of structure files; remove unused preinstalled tools first.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      # The image needs only the runtime CSVs; skip other LFS files.
+      - name: Fetch runtime data (Git LFS)
+        run: git lfs pull --include "data/supabase-import/**"
+
+      - name: Fetch structure assets (release data-20260627)
+        run: |
+          gh release download data-20260627 --dir /tmp/structures
+          (cd /tmp/structures && sha256sum -c SHA256SUMS-data.txt)
+          tar -xzf /tmp/structures/best_structure-20260627.tar.gz -C data/raw/20260627_web_data/
+          rm -rf /tmp/structures
+
+      # Plain docker build stores the image once; a buildx container builder would export a second copy.
+      - name: Build image
+        run: docker build -t memppi-atlas:file-data .
+
+      - name: Smoke test
+        run: |
+          docker run -d --name app -p 3000:3000 memppi-atlas:file-data
+          base=http://localhost:3000/TMPNet
+          # Docker accepts connections before Node listens; retry every error while it starts.
+          curl -fsS --retry 30 --retry-delay 2 --retry-all-errors "$base/api/network/stats"
+          curl -fsS "$base" -o /dev/null
+          curl -fsS "$base/api/network?view=overview&format=cyto&detail=slim" -o /dev/null
+          model=$(awk -F, 'NR==2 {gsub(/"/, "", $1); print $1}' data/supabase-import/20260627_web_data/structure_models.csv)
+          curl -fsS "$base/api/structures/$model" -o /dev/null
+          curl -fsS "$base/api/structures/$model/asset?kind=summary" -o /dev/null
+
+      - name: Show container logs
+        if: failure()
+        run: docker logs app
+
+      - name: Check for a new package.json version
+        id: version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push image to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          image=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          tags="latest sha-${GITHUB_SHA::7}"
+          if [ "${{ steps.version.outputs.new }}" = "true" ]; then
+            tags="$tags ${{ steps.version.outputs.version }}"
+          fi
+          for tag in $tags; do
+            docker tag memppi-atlas:file-data "$image:$tag"
+            docker push "$image:$tag"
+          done
+
+      - name: Create the version tag and release
+        if: steps.version.outputs.new == 'true'
+        run: |
+          version=${{ steps.version.outputs.version }}
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --generate-notes

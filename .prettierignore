@@ -1,0 +1,78 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+.nyc_output
+
+# Next.js
+.next
+out
+build
+dist
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+lerna-debug.log
+
+# Lock files (optional - format but don't commit changes)
+# package-lock.json
+# yarn.lock
+
+# Git and git-related files
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Binary files
+*.woff
+*.woff2
+*.ttf
+*.otf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+
+# CSV files
+*.csv
+
+
+
+
+
+# Generated network artifacts
+public/generated
+
+# Data and local-only files (ignored by Git; see .gitignore)
+data
+model
+docs/audit
+docs/webpage-modifications-media
+vm-docker-bundle
+.swc
+.agents
+.claude
+.codex
+AGENTS.md
+CLAUDE.md
